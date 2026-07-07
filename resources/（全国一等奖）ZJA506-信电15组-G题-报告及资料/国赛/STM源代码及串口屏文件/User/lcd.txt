@@ -1,0 +1,25 @@
+在main函数外部初始化
+ILI9341_Init (); ILI9341_GramScan(6);
+
+点亮lcd：
+LCD_SetFont(&Font8x16);设置字体大小
+LCD_SetColors(RED,WHITE);设置颜色，第一个参数为字体颜色，第二个参数为背景颜色
+ILI9341_Clear(0,0,LCD_X_LENGTH,LCD_Y_LENGTH);清除屏幕，从坐标到坐标
+ILI9341_DispStringLine_EN(LINE(0),"BH 2.8 inch LCD para:");
+显示一行英文
+LCD_SetTextColor(GREEN);设置字体颜色
+LCD_ClearLine(LINE(4));清除指定行
+
+
+画直线：
+	LCD_SetTextColor(RED);
+  ILI9341_DrawLine(50,170,210,230);  
+
+画矩形：
+	LCD_SetTextColor(RED);
+  ILI9341_DrawRectangle(50,200,100,30,1);
+最后一个参数表示是否填充，0填充
+画圆：
+LCD_SetTextColor(GREEN);
+  ILI9341_DrawCircle(100,200,10,1);
+  最后一个参数表示是否填充

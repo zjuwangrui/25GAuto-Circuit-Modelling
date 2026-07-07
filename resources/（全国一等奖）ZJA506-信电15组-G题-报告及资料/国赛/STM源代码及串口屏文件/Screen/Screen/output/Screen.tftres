@@ -1,0 +1,9 @@
+<Resource>
+    <pages>
+        <page name="Screen0" id="0" />
+    </pages>
+    <images>
+        <image id="0" url="d:\stm32projects\0电赛\!!!2025\2025 国赛\screen\screen\images\logo.png" effect_width="242" effect_height="139" />
+    </images>
+    <waves />
+</Resource>

@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "stm32f10x.h": "c",
+        "bsp_ili9341_lcd.h": "c",
+        "delay.h": "c",
+        "timer.h": "c",
+        "ad.h": "c",
+        "serial.h": "c",
+        "led.h": "c",
+        "fft.h": "c",
+        "math.h": "c",
+        "table_fft.h": "c",
+        "stm32_dsp.h": "c",
+        "bsp_spi_flash.h": "c",
+        "stdint.h": "c",
+        "control.h": "c"
+    }
+}

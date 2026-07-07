@@ -1,0 +1,68 @@
+    if (base_wave_freq > 17.5 && base_wave_freq < 22.5)
+    {
+        base_wave_freq_int = 20;
+    }
+    else if (base_wave_freq > 22.5 && base_wave_freq < 27.5)
+    {
+        base_wave_freq_int = 25;
+    }
+    else if (base_wave_freq > 27.5 && base_wave_freq < 32.5)
+    {
+        base_wave_freq_int = 30;
+    }
+    else if (base_wave_freq > 32.5 && base_wave_freq < 37.5)
+    {
+        base_wave_freq_int = 35;
+    }
+    else if (base_wave_freq > 37.5 && base_wave_freq < 42.5)
+    {
+        base_wave_freq_int = 40;
+    }
+    else if (base_wave_freq > 42.5 && base_wave_freq < 47.5)
+    {
+        base_wave_freq_int = 45;
+    }
+    else if (base_wave_freq > 47.5 && base_wave_freq < 52.5)
+    {
+        base_wave_freq_int = 50;
+    }
+    else if (base_wave_freq > 52.5 && base_wave_freq < 57.5)
+    {
+        base_wave_freq_int = 55;
+    }
+    else if (base_wave_freq > 57.5 && base_wave_freq < 62.5)
+    {
+        base_wave_freq_int = 60;
+    }
+    else if (base_wave_freq > 62.5 && base_wave_freq < 67.5)
+    {
+        base_wave_freq_int = 65;
+    }
+    else if (base_wave_freq > 67.5 && base_wave_freq < 72.5)
+    {
+        base_wave_freq_int = 70;
+    }
+    else if (base_wave_freq > 72.5 && base_wave_freq < 77.5)
+    {
+        base_wave_freq_int = 75;
+    }
+    else if (base_wave_freq > 77.5 && base_wave_freq < 82.5)
+    {
+        base_wave_freq_int = 80;
+    }
+    else if (base_wave_freq > 82.5 && base_wave_freq < 87.5)
+    {
+        base_wave_freq_int = 85;
+    }
+    else if (base_wave_freq > 87.5 && base_wave_freq < 92.5)
+    {
+        base_wave_freq_int = 90;
+    }
+    else if (base_wave_freq > 92.5 && base_wave_freq < 97.5)
+    {
+        base_wave_freq_int = 95;
+    }
+    else if (base_wave_freq > 97.5 && base_wave_freq < 102.5)
+    {
+        base_wave_freq_int = 100;
+    }
