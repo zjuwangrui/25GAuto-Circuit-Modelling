@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "D:/constructing_projects/25G电路模型探究/src",
-                "D:/constructing_projects/25G电路模型探究/include",
+                "D:/constructing_projects/25GAuto-Circuit-Modelling/src",
+                "D:/constructing_projects/25GAuto-Circuit-Modelling/include",
                 "D:/platformio/packages/framework-stm32cubef1/Drivers/CMSIS/Include",
                 "D:/platformio/packages/framework-stm32cubef1/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
                 "D:/platformio/packages/framework-stm32cubef1/Drivers/STM32F1xx_HAL_Driver/Inc",
@@ -61,8 +61,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "D:/constructing_projects/25G电路模型探究/src",
-                    "D:/constructing_projects/25G电路模型探究/include",
+                    "D:/constructing_projects/25GAuto-Circuit-Modelling/src",
+                    "D:/constructing_projects/25GAuto-Circuit-Modelling/include",
                     "D:/platformio/packages/framework-stm32cubef1/Drivers/CMSIS/Include",
                     "D:/platformio/packages/framework-stm32cubef1/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
                     "D:/platformio/packages/framework-stm32cubef1/Drivers/STM32F1xx_HAL_Driver/Inc",
