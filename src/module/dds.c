@@ -89,40 +89,39 @@ void dds_tone_amp  (float  amp_v)  { enter_single_tone_mode(); ad9910_set_amp01(
 void dds_tone_phase(float  deg)    { enter_single_tone_mode(); ad9910_set_phase_deg(deg); }
 
 /* ==================================================================
- *  §3  Mode 2 · 任意波 (RAM playback，Polar 模式)
+ *  §3  Mode 2 · 任意波 (RAM playback, ASF 目的模式)
  *
- *  样点编码 (Polar dest, datasheet Table 20):
- *    RAM 每字 32-bit:
- *      [31:18] ASF 14-bit  (幅度)
- *      [17:2 ] POW 16-bit  (相位)
- *      [ 1:0 ] Reserved
+ *  与实测例子 (resources/1.AD9910模块-三角波点频输出代码) 对齐:
+ *    - RAM 目的 = ASF (不用 Polar), DAC 输出直接正比 ASF
+ *    - RAM 每字 32-bit, 只有 [31:18] 存 14-bit ASF, 其余 0
+ *    - RAM 数据是"无符号幅度包络" (0 = 最低电压 ~250mV DC, 16383 = 满量程 500mV)
+ *    - FTW = 0 → DDS 载波不动, DAC 输出跟随 ASF (t) 直接给出波形形状
  *
- *  简化：只用幅度调制 (POW=0)，即 ASF-only。这样也能得到方波/三角波，
- *  且不用担心相位跳变引入的过冲。
+ *  波形样点编码约定 (供业务侧调用):
+ *    - 用户给的 sample ∈ [-1, +1] 对称范围 (数学直觉)
+ *    - 内部映射到 unipolar ASF: mag = 0.5 + 0.5 * (sample * amp01)
+ *    - 结果: sample=-1 → ASF=0 → 最低 DAC 输出; sample=+1 → ASF=full → 最高
+ *    - 输出峰峰值 (单端) = amp01 * 500 mV  (受 AD9910 单极性 DAC 限制)
  *
- *  播放速率：AD9910 RAM step 时钟 = SYSCLK/4 = 250 MHz，
- *    每步经过 (rate_divider+1) 个 SYSCLK/4 时钟。
- *    波形频率 f = 250e6 / (rate_divider+1) / N。
- *  → rate_divider = round(250e6 / (f × N)) - 1  (16-bit，0..65535)
+ *  播放速率 (与例子对齐, 无 -1 偏移):
+ *    freq = SYSCLK / (4 * M) / N
+ *    → M = SYSCLK / (4 * N * freq)      (M 范围 1..65535)
+ *    1 kHz / N=1024: M = 1e9 / (4*1024*1000) = 244
  * ================================================================== */
 
 static uint32_t s_arb_ram[DDS_ARB_RAM_DEPTH];   /* 组包缓冲 */
 
-/* 把 -1..+1 的 float 样点编成 RAM Polar 字 (仅用幅度，正数直接 ASF；
- * 负数用 POW=180° 转成正 ASF)。整体乘以 amp_v 缩放。*/
+/* 把 -1..+1 的 float 样点编成 RAM 字 (ASF-only 模式).
+ * 通过 mag = 0.5 + 0.5*s*amp01 把双极性映射到单极性 [0..1],
+ * 再放大到 14-bit ASF (0..16383), 存到 [31:18].
+ * DAC 输出 = ASF * IOUT_FS, 通过 50Ω 得到 0..500mV 的电压. */
 static uint32_t sample_to_ram_word(float s, float amp01)
 {
-    float mag = s * amp01;
-    /* 幅度极性：负 → 相位翻转 180° */
-    uint16_t pow16 = 0x0000;
-    if (mag < 0.0f) {
-        mag = -mag;
-        pow16 = 0x8000;   /* 180° */
-    }
+    float mag = 0.5f + 0.5f * s * amp01;
+    if (mag < 0.0f) mag = 0.0f;
     if (mag > 1.0f) mag = 1.0f;
     uint16_t asf14 = (uint16_t)(mag * 16383.0f + 0.5f);
-    /* Polar 字位分配: [31:18]=ASF, [17:2]=POW */
-    return ((uint32_t)(asf14 & 0x3FFF) << 18) | ((uint32_t)pow16 << 2);
+    return ((uint32_t)(asf14 & 0x3FFF) << 18);
 }
 
 static bool arb_load_ram_and_start(uint16_t n, double freq_hz, float amp01)
@@ -130,34 +129,33 @@ static bool arb_load_ram_and_start(uint16_t n, double freq_hz, float amp01)
     if (n == 0 || n > DDS_ARB_RAM_DEPTH) return false;
     if (freq_hz <= 0.0) return false;
 
-    /* --- 计算 rate_divider --- */
-    /* SYSCLK/4 = 250 MHz */
-    double step_clk = (double)AD9910_SYSCLK_HZ / 4.0;
-    double div      = step_clk / (freq_hz * (double)n) - 1.0;
-    if (div < 0.0) div = 0.0;
-    if (div > 65535.0) div = 65535.0;   /* 频率过低会饱和；用户需增加 n 或降 sysclk */
-    uint16_t rate_div = (uint16_t)(div + 0.5);
+    /* --- Rate M 计算 (与例子完全对齐, 无 -1) --- */
+    double step_clk = (double)AD9910_SYSCLK_HZ / 4.0;   /* 250 MHz */
+    double m_d      = step_clk / ((double)n * freq_hz);
+    if (m_d < 1.0)      m_d = 1.0;
+    if (m_d > 65535.0)  m_d = 65535.0;
+    uint16_t rate_m = (uint16_t)(m_d + 0.5);
 
-    /* --- 切模式 (确保 DRG 关掉，profile 引脚归 0) --- */
+    /* --- 切模式 --- */
     ad9910_drg_disable();
     ad9910_profile_select(0);
 
-    /* --- 写 RAM --- */
+    /* --- 写 RAM 数据 (会顺便设 profile 起始地址) --- */
     ad9910_ram_write(0, s_arb_ram, n);
 
-    /* --- 配置 profile 0 = RAM playback 参数 --- */
+    /* --- 覆写 profile 0 = 真正的 RAM playback 参数 --- */
     ad9910_ram_profile_t cfg = {
         .start_addr    = 0,
         .end_addr      = (uint16_t)(n - 1),
-        .rate_divider  = rate_div,
+        .rate_divider  = rate_m,
         .mode          = AD9910_RAM_MODE_CONTINUOUS_RAMP,
         .no_dwell_high = false,
         .zero_crossing = false,
     };
     ad9910_ram_profile_config(0, &cfg);
 
-    /* --- 使能 RAM (Polar 目标) --- */
-    ad9910_ram_enable(AD9910_CFR1_RAM_DEST_POLAR);
+    /* --- 使能 RAM, 目的 = ASF (与例子对齐) --- */
+    ad9910_ram_enable(AD9910_CFR1_RAM_DEST_ASF);
     s_mode = DDS_MODE_ARB;
     (void)amp01;    /* amp01 已经在样点里体现了 */
     return true;

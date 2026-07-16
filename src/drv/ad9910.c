@@ -411,20 +411,24 @@ void ad9910_ram_write(uint16_t start_addr, const uint32_t *data, uint16_t n)
 
 void ad9910_ram_profile_config(uint8_t profile_n, const ad9910_ram_profile_t *cfg)
 {
-    /* RAM playback profile 位分配 (datasheet Table 20):
-     *  [63:56] Reserved = 0
-     *  [55:40] Waveform End Address    (10bit 存在 [49:40])
-     *  [39:24] Waveform Start Address  (10bit 存在 [33:24])
-     *  [23:8]  Address Ramp Rate (16bit divider, 决定 playback 速率)
-     *  [7:5]   Reserved
-     *  [4]     No-Dwell High
-     *  [3]     Zero-crossing Enable
-     *  [2:0]   RAM Playback Mode
+    /* RAM playback profile 位分配 (与实测例子对齐: 三角波例子 profile =
+     *   0x00 00 01 FF C0 00 00 04, 反解得到下面的位分配):
+     *
+     *   [63:56] Reserved
+     *   [55:40] Address Ramp Rate M         (16 bit) —— 播放速率
+     *   [39:30] Waveform End Address        (10 bit, 顶部对齐在 [39:24] 的 16-bit 字段)
+     *   [29:24] Reserved (低位补零)
+     *   [23:14] Waveform Start Address      (10 bit, 顶部对齐在 [23:8])
+     *   [13:8]  Reserved (低位补零)
+     *   [7:5]   Reserved
+     *   [4]     No-dwell High
+     *   [3]     Zero-crossing Enable
+     *   [2:0]   RAM Playback Mode
      */
     uint64_t v = 0;
-    v |= ((uint64_t)(cfg->end_addr   & 0x3FF) << 40);
-    v |= ((uint64_t)(cfg->start_addr & 0x3FF) << 24);
-    v |= ((uint64_t)(cfg->rate_divider)       <<  8);
+    v |= ((uint64_t)(cfg->rate_divider & 0xFFFF) << 40);  /* rate M at [55:40] */
+    v |= ((uint64_t)(cfg->end_addr    & 0x3FF)  << 30);   /* end   at [39:30] */
+    v |= ((uint64_t)(cfg->start_addr  & 0x3FF)  << 14);   /* start at [23:14] */
     if (cfg->no_dwell_high) v |= (1ULL << 4);
     if (cfg->zero_crossing) v |= (1ULL << 3);
     v |= ((uint64_t)(cfg->mode & 0x7));
@@ -434,27 +438,21 @@ void ad9910_ram_profile_config(uint8_t profile_n, const ad9910_ram_profile_t *cf
 
 void ad9910_ram_enable(uint32_t dest_mask)
 {
-    /* --- 关键 1: 清 CFR2 里 "ASF from Single-Tone Profile" bit 5 ---
-     * 因为 profile 在 RAM 模式下被重用为 RAM 参数, 如果这个位仍打开,
-     * AD9910 会从 profile 的高 16 位当 ASF 读, 那里现在存的是 end_addr 的
-     * 高位, 数值极小 → ASF ≈ 0 → 输出 = 0.
-     * 所以先把 CFR2 里 bit 5 清掉, 让 ASF 由 RAM 数据 (Polar/ASF dest) 提供. */
+    /* 与实测例子完全对齐:
+     *   CFR1 = 0xC0400000 = bit31(RAM_EN) | bit30(dest MSB, 目的 ASF=10b) | bit22(禁 sinc)
+     *   CFR2 里 "ASF from single-tone profile" bit 5 关掉
+     *   FTW 寄存器 0x07 显式清 0
+     *
+     *   例子里 RAM 数据是无符号 14-bit ASF 值 (0..16383), 目的是 ASF (不是 Polar).
+     *   FTW=0 时 DAC 输出正比 ASF, 得到"直接播放 RAM 波形"的效果. */
     ad9910_write32(AD9910_REG_CFR2, AD9910_CFR2_BASE & ~(1UL << 5));
-
-    /* --- 关键 2: 显式清 FTW (register 0x07) 和 POW (0x08) ---
-     * Polar/ASF/POW 目的的 RAM 模式下, DDS 载波频率来自 register 0x07.
-     * 若之前跑单音把 FTW 塞进了别的地方, 或者 register 0x07 有残留,
-     * DDS 会以那个频率跑载波, 叠加到 RAM 数据上 → 示波器看到就是噪声.
-     * 显式写 0 保证 phase accumulator 不动 (Polar mag+phase 编码要求 FTW=0). */
     ad9910_write32(AD9910_REG_FTW, 0x00000000UL);
-    ad9910_write16(AD9910_REG_POW, 0x0000);
 
-    /* --- 关键 3: CFR1 里同时打开 "Autoclear phase accumulator" (bit 13) ---
-     * 每次 IO_UPDATE 时把相位累加器清零, 避免上次单音留下的相位偏差,
-     * 让 Polar 编码的 mag*cos(POW) 输出可预测. */
+    /* dest_mask 期望是 AD9910_CFR1_RAM_DEST_ASF (= 2<<29 = 0x40000000).
+     * 加上例子的 bit 22 = 0xC0400000. */
     uint32_t cfr1 = AD9910_CFR1_RAM_ENABLE
                   | (dest_mask & (3UL << 29))
-                  | (1UL << 13);           /* Autoclear phase accumulator */
+                  | (1UL << 22);
     ad9910_write32(AD9910_REG_CFR1, cfr1);
 }
 
