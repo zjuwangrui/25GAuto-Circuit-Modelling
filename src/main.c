@@ -57,29 +57,60 @@ static void SystemClock_Config(void)
     if (HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_2) != HAL_OK) while (1);
 }
 
-/* ===== 持续输出正弦任务 =====
+/* ===== 持续输出三角波任务 =====
  *
- *  每 2 秒重发一次 profile 0 参数 (1kHz / 1V / 0°)：
- *    - AD9910 profile 0 参数其实是"写一次就一直有效"的，本来无需重发
- *    - 每 2s 刷一次的实际用途：
- *        1. 万一芯片被外部干扰丢了寄存器，能自动恢复
- *        2. 示波器上能看到周期性 SPI 活动 (PA4/PA5/PA7 + PC4)，方便测线
- *    - 输出永远保持 1kHz 正弦，不做静音也不做复位
+ *  走 Mode 2 (RAM 任意波形 playback):
+ *    - dds_arb_triangle 会生成 1024 点三角波样点, 灌进 AD9910 内部 RAM,
+ *      然后配置 profile 0 为 RAM playback 循环模式
+ *    - 播放速率 = SYSCLK/4 / (rate_divider+1) / 1024, 内部换算好
+ *    - 1 kHz 三角波: rate_divider ≈ 244, 完全在范围内
  *
- *  想改频率/幅度：改下面的 dds_tone_sine 参数
- *  想加快/减慢刷新：改 t_sine.period_ms
+ *  每 2 秒重灌一次的用途:
+ *    1. 保险 - 万一寄存器被干扰能自动恢复
+ *    2. 让 PA4/PA5/PA7/PC4 引脚周期性有 SPI 活动, 方便测线
+ *
+ *  想切回正弦: 把下面 t_triangle 的 run 字段改回 sine_task_body 即可 (见注释)
+ *  想改频率/幅度: 改 dds_arb_triangle 参数
+ *  想改 RAM 深度: 改 include/module/dds.h 里 DDS_ARB_RAM_DEPTH (默认 1024)
  */
-static void sine_task(void)
+static void triangle_task(void)
 {
-    dds_tone_sine(1000.0 /*Hz*/, 1.0f /*V*/, 0.0f /*deg*/);
-    UART_Printf("[sine] refresh uptime=%lu ms  (1kHz 1V, mode=%d)\r\n",
+    dds_arb_triangle(1000.0 /*Hz*/, 1.0f /*V*/);
+    UART_Printf("[tri] refresh uptime=%lu ms  (1kHz 1V triangle, mode=%d)\r\n",
                 (unsigned long)HAL_GetTick(), (int)dds_get_mode());
 }
 
+/* ===== 持续输出方波任务 =====
+ *
+ *  同样走 Mode 2 (RAM 任意波形 playback):
+ *    - dds_arb_square 会生成 1024 点方波样点 (前 duty*1024 点为 +amp_v,
+ *      其余为 -amp_v), 灌进 AD9910 内部 RAM
+ *    - duty ∈ (0.01, 0.99), 0.5 = 50% 占空比 (对称方波)
+ *
+ *  注意: DAC 后面的 300MHz 低通滤波器会让方波的高频谐波损失,
+ *        示波器上看到的实际是 "尖角略钝" 的近似方波.
+ *        若需要真正的方波, 需在 OUT 后面外接比较器整形.
+ *
+ *  想改频率/占空比/幅度: 改 dds_arb_square 参数
+ */
+static void square_task(void)
+{
+    dds_arb_square(1000.0 /*Hz*/, 0.5f /*duty*/, 1.0f /*V*/);
+    UART_Printf("[sqr] refresh uptime=%lu ms  (1kHz 1V 50%% square, mode=%d)\r\n",
+                (unsigned long)HAL_GetTick(), (int)dds_get_mode());
+}
+
+static void sine_task_body(void) {
+    dds_tone_sine(1000.0, 1.0f, 0.0f);
+    UART_Printf("[sine] refresh uptime=%lu ms\r\n", (unsigned long)HAL_GetTick());
+}
+
+
 /* ===== 任务表 (在这里增删) ===== */
-static sched_task_t t_sine      = { .run = sine_task, .period_ms = 2000, .name = "sine" };
-static sched_task_t t_ui        = { .run = ui_task,   .period_ms = 100,  .name = "ui"   };
-static sched_task_t t_dds       = { .run = dds_task,  .period_ms = 10,   .name = "dds"  };
+static sched_task_t t_triangle  = { .run = triangle_task, .period_ms = 2000, .name = "tri" };
+static sched_task_t t_square    = { .run = square_task,   .period_ms = 2000, .name = "sqr" };
+static sched_task_t t_ui        = { .run = ui_task,       .period_ms = 100,  .name = "ui"  };
+static sched_task_t t_dds       = { .run = dds_task,      .period_ms = 10,   .name = "dds" };
 
 int main(void)
 {
@@ -95,14 +126,21 @@ int main(void)
     ui_init();
     dds_init();                     /* dds_init 内部会 ad9910_init: SPI/复位/PLL 锁定 */
 
-    /* ---- 上电立即输出一次 1kHz 正弦，1V 幅度 ---- */
-    dds_tone_sine(1000.0 /*Hz*/, 1.0f /*V*/, 0.0f /*deg*/);
+    /* ---- 上电立即输出波形。三种候选，只留一个不注释：
+     *      1) 三角波   dds_arb_triangle(1000.0, 1.0f);
+     *      2) 方波     dds_arb_square  (1000.0, 0.5f, 1.0f);
+     *      3) 正弦     dds_tone_sine   (1000.0, 1.0f, 0.0f);
+     *   任务表同理: 只 sched_register 你想要的那个。 */
+   // dds_arb_triangle(1000.0 /*Hz*/, 1.0f /*V*/);
+    dds_arb_square  (1000.0 /*Hz*/, 0.5f /*duty*/, 1.0f /*V*/);
 
     /* ---- 调度器 ---- */
     sched_init();
-    sched_register(&t_sine);        /* 持续维持正弦输出 */
+   // sched_register(&t_triangle);    /* 持续维持三角波输出 */
+    //sched_register(&t_square);      /* 持续维持方波输出   */
+    //dds_tone_sine(1000.0, 1.0f, 0.0f);
+   // dds_arb_dc(1.0f);
     sched_register(&t_ui);
-    //sched_register(&t_dds);         /* dds_task: 空跑; 进入 HOP 自动模式后才干活 */
 
     sched_run_forever();
 }

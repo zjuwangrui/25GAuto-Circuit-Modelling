@@ -108,6 +108,11 @@ bool dds_arb_square  (double freq_hz, float duty, float amp_v);    /* duty 0..1 
 bool dds_arb_triangle(double freq_hz, float amp_v);
 bool dds_arb_sawtooth(double freq_hz, float amp_v);
 
+/* 调试用：RAM 全填相同值 → 输出应该是稳定直流 (值 = amp_v)。
+ *   OUT+ 有稳定电压 → RAM 使能/写入/播放机制 OK, 只是波形算法错
+ *   OUT+ 无信号     → RAM 通路根本不通, 需要查 CFR1/profile 位定义 */
+bool dds_arb_dc      (float amp_v);
+
 /* ==========================================================================
  *  Mode 3 · 扫频 (DRG)
  *  --------------------

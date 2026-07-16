@@ -202,6 +202,21 @@ bool dds_arb_square  (double f, float duty, float v)
     return dds_arb_from_fn(wf_square, DDS_ARB_RAM_DEPTH, f, v);
 }
 
+/* --- 调试用: RAM 全填相同值 → OUT+ 应该输出稳定 DC ---
+ *   如果示波器上看到稳定电压 (幅度 ~amp_v) → RAM 通路 + Polar 编码 mag 位分配 OK
+ *   如果 OUT+ 什么都没有 / 是噪声 → RAM 使能位 / profile 位定义有 bug
+ *
+ *  实现: 把 1024 个 RAM 字都填成 sample=+1.0 * amp01 (mag=amp01, POW=0°)
+ *        rate_divider 任意选一个 (取 1kHz 对应值), 因为所有样点相同, 输出恒定
+ */
+bool dds_arb_dc(float amp_v)
+{
+    float amp01 = amp_v_to_amp01(amp_v);
+    uint32_t ram_word = sample_to_ram_word(1.0f, amp01);   /* 全正, POW=0° */
+    for (uint16_t i = 0; i < DDS_ARB_RAM_DEPTH; ++i) s_arb_ram[i] = ram_word;
+    return arb_load_ram_and_start(DDS_ARB_RAM_DEPTH, 1000.0, amp01);
+}
+
 /* ==================================================================
  *  §4  Mode 3 · 扫频 (DRG)
  *
