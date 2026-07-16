@@ -247,57 +247,6 @@ void thd_task(void)
     s_frame_ready = false;
 }
 
-/* ============================ Terminal 命令 ============================ */
-
-static int cmd_thd_start(int argc, char **argv)
-{
-    (void)argc; (void)argv;
-    if (!thd_start()) { term_printf("thd.start FAILED (adc busy?)\r\n"); return -1; }
-    term_printf("thd: ch=%lu fs=%lu Hz N=%u\r\n",
-                (unsigned long)s_channel, (unsigned long)s_fs_hz, THD_N_POINTS);
-    return 0;
-}
-static term_cmd_t s_c_start = { "thd.start", cmd_thd_start, "begin THD sampling", 0 };
-
-static int cmd_thd_stop(int argc, char **argv)
-{
-    (void)argc; (void)argv;
-    thd_stop();
-    return 0;
-}
-static term_cmd_t s_c_stop = { "thd.stop", cmd_thd_stop, "stop THD sampling", 0 };
-
-static int cmd_thd_info(int argc, char **argv)
-{
-    (void)argc; (void)argv;
-    term_printf("running : %s\r\n", thd_is_running() ? "yes" : "no");
-    term_printf("Fs      : %lu Hz\r\n", (unsigned long)s_result.fs_hz);
-    term_printf("frame   : %lu\r\n",    (unsigned long)s_result.frame_id);
-    term_printf("f0      : %.2f Hz\r\n", (double)s_result.f0_hz);
-    for (int k = 0; k < THD_MAX_HARMONIC; ++k) {
-        term_printf("H%d      : %.3f\r\n", k + 1, (double)s_result.harmonic[k]);
-    }
-    term_printf("THD     : %.3f %%\r\n", (double)s_result.thd_percent);
-    return 0;
-}
-static term_cmd_t s_c_info = { "thd.info", cmd_thd_info, "show latest THD result", 0 };
-
-static int cmd_thd_config(int argc, char **argv)
-{
-    if (argc < 3) {
-        term_printf("usage: thd.config <adc_ch> <fs_hz>\r\n");
-        term_printf("  ex : thd.config 1 40000   (PA1, 40kHz)\r\n");
-        return -1;
-    }
-    uint32_t ch = (uint32_t)atoi(argv[1]);
-    uint32_t fs = (uint32_t)atoi(argv[2]);
-    thd_configure(ch, fs);
-    term_printf("configured: ch=%lu fs=%lu\r\n",
-                (unsigned long)ch, (unsigned long)fs);
-    return 0;
-}
-static term_cmd_t s_c_config = { "thd.config", cmd_thd_config, "<ch> <fs_hz>", 0 };
-
 /* ============================ 初始化 ============================ */
 
 void thd_init(void)
@@ -305,8 +254,4 @@ void thd_init(void)
     memset(&s_result, 0, sizeof(s_result));
     s_result.fs_hz = s_fs_hz;
 
-    term_register(&s_c_start);
-    term_register(&s_c_stop);
-    term_register(&s_c_info);
-    term_register(&s_c_config);
 }

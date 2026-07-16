@@ -1,6 +1,5 @@
 #include "module/ui.h"
 #include "module/thd.h"
-#include "module/terminal.h"
 #include "bsp/lcd.h"
 #include "stm32f1xx_hal.h"
 #include <string.h>
@@ -238,28 +237,6 @@ bool ui_switch_to(const char *name)
 }
 
 /* ============================================================
- *  Terminal 命令：ui.page <name>
- * ============================================================ */
-
-static int cmd_ui_page(int argc, char **argv)
-{
-    if (argc < 2) {
-        term_printf("usage: ui.page <name>\r\n");
-        term_printf("pages:");
-        for (uint8_t i = 0; i < s_page_count; ++i)
-            term_printf(" %s", s_pages[i]->name);
-        term_printf("\r\n");
-        return -1;
-    }
-    if (!ui_switch_to(argv[1])) {
-        term_printf("unknown page: %s\r\n", argv[1]);
-        return -1;
-    }
-    return 0;
-}
-static term_cmd_t s_c_ui_page = { "ui.page", cmd_ui_page, "<name> switch page", 0 };
-
-/* ============================================================
  *  Init / Task
  * ============================================================ */
 
@@ -269,7 +246,6 @@ void ui_init(void)
     ui_register_page(&s_welcome);
     ui_register_page(&s_thd_page);
     ui_switch_to("welcome");
-    term_register(&s_c_ui_page);
 }
 
 void ui_task(void)
