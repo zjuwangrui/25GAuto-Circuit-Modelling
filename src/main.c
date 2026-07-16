@@ -57,10 +57,29 @@ static void SystemClock_Config(void)
     if (HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_2) != HAL_OK) while (1);
 }
 
+/* ===== 持续输出正弦任务 =====
+ *
+ *  每 2 秒重发一次 profile 0 参数 (1kHz / 1V / 0°)：
+ *    - AD9910 profile 0 参数其实是"写一次就一直有效"的，本来无需重发
+ *    - 每 2s 刷一次的实际用途：
+ *        1. 万一芯片被外部干扰丢了寄存器，能自动恢复
+ *        2. 示波器上能看到周期性 SPI 活动 (PA4/PA5/PA7 + PC4)，方便测线
+ *    - 输出永远保持 1kHz 正弦，不做静音也不做复位
+ *
+ *  想改频率/幅度：改下面的 dds_tone_sine 参数
+ *  想加快/减慢刷新：改 t_sine.period_ms
+ */
+static void sine_task(void)
+{
+    dds_tone_sine(1000.0 /*Hz*/, 1.0f /*V*/, 0.0f /*deg*/);
+    UART_Printf("[sine] refresh uptime=%lu ms  (1kHz 1V, mode=%d)\r\n",
+                (unsigned long)HAL_GetTick(), (int)dds_get_mode());
+}
 
 /* ===== 任务表 (在这里增删) ===== */
-static sched_task_t t_ui        = { .run = ui_task,        .period_ms = 100, .name = "ui"  };
-static sched_task_t t_dds       = { .run = dds_task,       .period_ms = 10,  .name = "dds" };
+static sched_task_t t_sine      = { .run = sine_task, .period_ms = 2000, .name = "sine" };
+static sched_task_t t_ui        = { .run = ui_task,   .period_ms = 100,  .name = "ui"   };
+static sched_task_t t_dds       = { .run = dds_task,  .period_ms = 10,   .name = "dds"  };
 
 int main(void)
 {
@@ -72,27 +91,18 @@ int main(void)
     MX_GPIO_Init();
     MX_USART1_UART_Init();          /* 调试口 (UART_Printf 走这里) */
 
-    /* ---- 最早期的探针：UART 一起来就打，能收到说明 UART/时钟/供电 OK ---- */
-    UART_Printf("\r\n=== BOOT: STM32F103VE tick=%lu ===\r\n",
-                (unsigned long)HAL_GetTick());
-
     /* ---- 通用模块 & 驱动 ---- */
     ui_init();
-    UART_Printf("[main] ui_init done\r\n");
-
     dds_init();                     /* dds_init 内部会 ad9910_init: SPI/复位/PLL 锁定 */
-    UART_Printf("[main] dds_init done\r\n");
 
-    /* ---- 上电动作: 输出 1 kHz 正弦，幅度 1V ---- */
-    /* 走 Mode 1 (单音 profile) —— AD9910 native sine, 最干净 */
+    /* ---- 上电立即输出一次 1kHz 正弦，1V 幅度 ---- */
     dds_tone_sine(1000.0 /*Hz*/, 1.0f /*V*/, 0.0f /*deg*/);
-
-    UART_Printf("[main] entering scheduler loop\r\n");
 
     /* ---- 调度器 ---- */
     sched_init();
+    sched_register(&t_sine);        /* 持续维持正弦输出 */
     sched_register(&t_ui);
-    sched_register(&t_dds);        /* dds_task: 空跑; 进入 HOP 自动模式后才干活 */
+    //sched_register(&t_dds);         /* dds_task: 空跑; 进入 HOP 自动模式后才干活 */
 
     sched_run_forever();
 }

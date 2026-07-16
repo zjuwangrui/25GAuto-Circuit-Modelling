@@ -275,29 +275,20 @@ void ad9910_soft_reset(void)
 
 void ad9910_init(void)
 {
-    UART_Printf("[ad9910] init begin\r\n");
-
     /* ---- 底层外设 ---- */
     MX_SPI1_Init();
     ad9910_gpio_init();
-    UART_Printf("[ad9910] SPI1 + GPIO ready. Pins: CS=PA4 SCK=PA5 MOSI=PA7 RST=PC3 IOUP=PC4\r\n");
-    UART_Printf("[ad9910]                          PWR=PC0 DPH=PC1 DRC=PC2 (all low)\r\n");
 
     /* ---- 硬复位 ---- */
-    UART_Printf("[ad9910] soft reset...\r\n");
     ad9910_soft_reset();
 
     /* ---- CFR1: 单音模式 (RAM 关闭, OSK 关闭, SDIO 保持双向) ---- */
-    UART_Printf("[ad9910] CFR1 <- 0x%08lX\r\n", 0x00000000UL);
     ad9910_write32(AD9910_REG_CFR1, 0x00000000UL);
 
     /* ---- CFR2: 匹配延迟 + SYNC_CLK + "ASF from single-tone profile" 使能 ---- */
-    UART_Printf("[ad9910] CFR2 <- 0x%08lX\r\n", (unsigned long)AD9910_CFR2_BASE);
     ad9910_write32(AD9910_REG_CFR2, AD9910_CFR2_BASE);
 
     /* ---- CFR3: PLL 40 MHz × 25 = 1 GHz ---- */
-    UART_Printf("[ad9910] CFR3 <- 0x%08lX  (PLL 40MHz*25 = 1GHz)\r\n",
-                (unsigned long)AD9910_CFR3_VALUE);
     ad9910_write32(AD9910_REG_CFR3, AD9910_CFR3_VALUE);
 
     /* PLL 锁定 datasheet 典型 < 1 ms，保守等 5 ms。
@@ -307,13 +298,11 @@ void ad9910_init(void)
     HAL_Delay(5);
     s_state.pll_locked    = true;   /* 假定 */
     s_state.cfr3_readback = 0;      /* 未读 */
-    UART_Printf("[ad9910] PLL wait done (assumed locked, no SDO readback)\r\n");
 
     /* ---- 默认输出：静音 (ASF=0)，profile 0 频率/相位记为 0 ---- */
     ad9910_profile_write(0, 0, 0, 0);
     ad9910_profile_select(0);
     s_state.output_on = false;
-    UART_Printf("[ad9910] init done. Output muted, waiting for tone command.\r\n");
 }
 
 /* ==================================================================

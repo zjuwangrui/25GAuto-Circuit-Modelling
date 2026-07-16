@@ -77,30 +77,16 @@ static void enter_single_tone_mode(void)
 
 void dds_tone_sine(double f_hz, float amp_v, float phase_deg)
 {
-    float amp01 = amp_v_to_amp01(amp_v);
-    uint32_t ftw  = ad9910_freq_to_ftw    (f_hz);
-    uint16_t asf  = ad9910_amp01_to_asf   (amp01);
-    uint16_t pow16= ad9910_phase_deg_to_pow(phase_deg);
-
-    UART_Printf("[dds] tone_sine: f=%.3f Hz  amp_v=%.3f V  phase=%.2f deg\r\n",
-                f_hz, (double)amp_v, (double)phase_deg);
-    UART_Printf("[dds]   -> amp01=%.4f (硬饱和后)  FTW=0x%08lX  ASF=0x%04X  POW=0x%04X\r\n",
-                (double)amp01, (unsigned long)ftw, (unsigned)asf, (unsigned)pow16);
-    if (amp_v > DDS_FULL_SCALE_V) {
-        UART_Printf("[dds]   ! amp_v > DDS_FULL_SCALE_V(%.2fV), hard-clipped to full scale\r\n",
-                    (double)DDS_FULL_SCALE_V);
-    }
-
     enter_single_tone_mode();
     ad9910_tone_t t = {
-        .f_hz = f_hz, .amp01 = amp01, .phase_deg = phase_deg,
+        .f_hz = f_hz, .amp01 = amp_v_to_amp01(amp_v), .phase_deg = phase_deg,
     };
     ad9910_set_tone(&t);
 }
 
-void dds_tone_freq (double f_hz)   { UART_Printf("[dds] tone_freq  = %.3f Hz\r\n", f_hz);      enter_single_tone_mode(); ad9910_set_freq_hz(f_hz); }
-void dds_tone_amp  (float  amp_v)  { UART_Printf("[dds] tone_amp   = %.3f V\r\n", (double)amp_v); enter_single_tone_mode(); ad9910_set_amp01(amp_v_to_amp01(amp_v)); }
-void dds_tone_phase(float  deg)    { UART_Printf("[dds] tone_phase = %.2f deg\r\n", (double)deg); enter_single_tone_mode(); ad9910_set_phase_deg(deg); }
+void dds_tone_freq (double f_hz)   { enter_single_tone_mode(); ad9910_set_freq_hz(f_hz); }
+void dds_tone_amp  (float  amp_v)  { enter_single_tone_mode(); ad9910_set_amp01(amp_v_to_amp01(amp_v)); }
+void dds_tone_phase(float  deg)    { enter_single_tone_mode(); ad9910_set_phase_deg(deg); }
 
 /* ==================================================================
  *  §3  Mode 2 · 任意波 (RAM playback，Polar 模式)
@@ -179,8 +165,6 @@ static bool arb_load_ram_and_start(uint16_t n, double freq_hz, float amp01)
 
 bool dds_arb_load(const float *samples, uint16_t n, double freq_hz, float amp_v)
 {
-    UART_Printf("[dds] arb_load: n=%u  f=%.3f Hz  amp=%.3f V\r\n",
-                (unsigned)n, freq_hz, (double)amp_v);
     if (!samples) return false;
     float amp01 = amp_v_to_amp01(amp_v);
     for (uint16_t i = 0; i < n; ++i) s_arb_ram[i] = sample_to_ram_word(samples[i], amp01);
@@ -189,8 +173,6 @@ bool dds_arb_load(const float *samples, uint16_t n, double freq_hz, float amp_v)
 
 bool dds_arb_from_fn(dds_arb_fn_t fn, uint16_t n, double freq_hz, float amp_v)
 {
-    UART_Printf("[dds] arb_from_fn: n=%u  f=%.3f Hz  amp=%.3f V\r\n",
-                (unsigned)n, freq_hz, (double)amp_v);
     if (!fn || n == 0) return false;
     float amp01 = amp_v_to_amp01(amp_v);
     for (uint16_t i = 0; i < n; ++i) {
@@ -266,8 +248,6 @@ static void drg_build_cfg(uint32_t lower32, uint32_t upper32,
 
 bool dds_sweep_freq(double f_start, double f_stop, float t_s, dds_sweep_style_t style)
 {
-    UART_Printf("[dds] sweep_freq: %.3f -> %.3f Hz in %.3f s, style=%d\r\n",
-                f_start, f_stop, (double)t_s, (int)style);
     enter_single_tone_mode();          /* 先回单音，再进 DRG */
     uint32_t lo = ad9910_freq_to_ftw(f_start);
     uint32_t hi = ad9910_freq_to_ftw(f_stop);
@@ -287,8 +267,6 @@ bool dds_sweep_freq(double f_start, double f_stop, float t_s, dds_sweep_style_t 
 
 bool dds_sweep_amp(float v_start, float v_stop, float t_s, dds_sweep_style_t style)
 {
-    UART_Printf("[dds] sweep_amp: %.3f -> %.3f V in %.3f s, style=%d\r\n",
-                (double)v_start, (double)v_stop, (double)t_s, (int)style);
     enter_single_tone_mode();
     uint32_t lo = (uint32_t)ad9910_amp01_to_asf(amp_v_to_amp01(v_start)) << 18;
     uint32_t hi = (uint32_t)ad9910_amp01_to_asf(amp_v_to_amp01(v_stop))  << 18;
@@ -308,8 +286,6 @@ bool dds_sweep_amp(float v_start, float v_stop, float t_s, dds_sweep_style_t sty
 
 bool dds_sweep_phase(float d_start, float d_stop, float t_s, dds_sweep_style_t style)
 {
-    UART_Printf("[dds] sweep_phase: %.2f -> %.2f deg in %.3f s, style=%d\r\n",
-                (double)d_start, (double)d_stop, (double)t_s, (int)style);
     enter_single_tone_mode();
     uint32_t lo = (uint32_t)ad9910_phase_deg_to_pow(d_start) << 16;
     uint32_t hi = (uint32_t)ad9910_phase_deg_to_pow(d_stop)  << 16;
@@ -327,8 +303,8 @@ bool dds_sweep_phase(float d_start, float d_stop, float t_s, dds_sweep_style_t s
     return true;
 }
 
-void dds_sweep_start(void) { UART_Printf("[dds] sweep_start\r\n"); s_sweep.running = true;  ad9910_io_update(); }
-void dds_sweep_stop (void) { UART_Printf("[dds] sweep_stop\r\n");  s_sweep.running = false; ad9910_drg_disable(); s_mode = DDS_MODE_TONE; }
+void dds_sweep_start(void) { s_sweep.running = true;  ad9910_io_update(); }
+void dds_sweep_stop (void) { s_sweep.running = false; ad9910_drg_disable(); s_mode = DDS_MODE_TONE; }
 
 /* ==================================================================
  *  §5  Mode 4 · 快速跳频 (Multi-Profile)
@@ -336,7 +312,6 @@ void dds_sweep_stop (void) { UART_Printf("[dds] sweep_stop\r\n");  s_sweep.runni
 
 bool dds_hop_load(const double *freq_list, const float *amp_list, uint8_t n)
 {
-    UART_Printf("[dds] hop_load: n=%u profile(s)\r\n", (unsigned)n);
     if (!freq_list || n == 0 || n > 8) return false;
 
     enter_single_tone_mode();          /* 关 RAM/DRG，只留 profile */
@@ -344,8 +319,6 @@ bool dds_hop_load(const double *freq_list, const float *amp_list, uint8_t n)
         float amp_v = amp_list ? amp_list[i] : DDS_FULL_SCALE_V;
         s_hop.freq_list[i] = freq_list[i];
         s_hop.amp_list [i] = amp_v;
-        UART_Printf("[dds]   profile[%u]: f=%.3f Hz  amp=%.3f V\r\n",
-                    (unsigned)i, freq_list[i], (double)amp_v);
         ad9910_profile_write(i,
             ad9910_amp01_to_asf(amp_v_to_amp01(amp_v)),
             0,
@@ -365,16 +338,12 @@ bool dds_hop_load(const double *freq_list, const float *amp_list, uint8_t n)
 void dds_hop_select(uint8_t idx)
 {
     if (idx >= s_hop.n) return;
-    UART_Printf("[dds] hop_select: idx=%u  f=%.3f Hz\r\n",
-                (unsigned)idx, s_hop.freq_list[idx]);
     s_hop.idx = idx;
     ad9910_profile_select(idx);
 }
 
 void dds_hop_task_config(uint32_t period_ms, dds_hop_mode_t mode)
 {
-    UART_Printf("[dds] hop_task_config: period=%lu ms  mode=%d\r\n",
-                (unsigned long)period_ms, (int)mode);
     s_hop.mode      = mode;
     s_hop.period_ms = period_ms;
     s_hop.last_ms   = HAL_GetTick();
@@ -382,7 +351,6 @@ void dds_hop_task_config(uint32_t period_ms, dds_hop_mode_t mode)
 
 void dds_hop_stop(void)
 {
-    UART_Printf("[dds] hop_stop\r\n");
     s_hop.mode = DDS_HOP_MODE_MANUAL;
     s_hop.period_ms = 0;
     /* 停留在最后一个 profile 上；关输出请调 dds_stop() */
@@ -394,8 +362,6 @@ void dds_hop_stop(void)
 
 void dds_osk_begin(double freq_hz, float amp_v)
 {
-    UART_Printf("[dds] osk_begin: carrier f=%.3f Hz  amp=%.3f V\r\n",
-                freq_hz, (double)amp_v);
     enter_single_tone_mode();
     ad9910_set_tone(&(ad9910_tone_t){
         .f_hz = freq_hz, .amp01 = amp_v_to_amp01(amp_v), .phase_deg = 0.0f });
@@ -404,11 +370,10 @@ void dds_osk_begin(double freq_hz, float amp_v)
     s_mode = DDS_MODE_OSK;
 }
 
-void dds_osk_key(bool on)  { UART_Printf("[dds] osk_key: %s\r\n", on ? "ON" : "OFF"); ad9910_osk_key(on); }
+void dds_osk_key(bool on)  { ad9910_osk_key(on); }
 
 void dds_osk_end(void)
 {
-    UART_Printf("[dds] osk_end (back to single-tone)\r\n");
     ad9910_osk_key(false);
     ad9910_osk_enable(false);
     s_mode = DDS_MODE_TONE;
@@ -450,20 +415,16 @@ void dds_task(void)
 
 void dds_init(void)
 {
-    UART_Printf("[dds] init begin (full-scale calibration = %.3f V)\r\n",
-                (double)DDS_FULL_SCALE_V);
     memset(&s_sweep, 0, sizeof(s_sweep));
     memset(&s_hop,   0, sizeof(s_hop));
 
     ad9910_init();
     /* 上电即"待命":单音模式、输出关闭。业务侧再显式设频/幅/相 */
     s_mode = DDS_MODE_TONE;
-    UART_Printf("[dds] init done, mode=TONE (muted)\r\n");
 }
 
 void dds_stop(void)
 {
-    UART_Printf("[dds] stop (mute output, keep mode)\r\n");
     ad9910_output_enable(false);
 }
 
