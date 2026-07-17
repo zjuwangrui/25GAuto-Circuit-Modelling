@@ -133,8 +133,12 @@ typedef enum {
     AD9910_RAM_MODE_DIRECT_SWITCH   = 0,   /* 由 profile 引脚直接选一个 RAM 字 */
     AD9910_RAM_MODE_RAMP_UP         = 1,   /* start → end 走一遍 */
     AD9910_RAM_MODE_BIDIRECTIONAL   = 2,   /* start → end → start */
-    AD9910_RAM_MODE_CONTINUOUS_RAMP = 3,   /* 循环 start → end */
-    AD9910_RAM_MODE_CONTINUOUS_BIDIR= 4,   /* 循环 双向 */
+    /* 注意: 下面这两个名字与实测行为反了 (datasheet 描述含糊):
+     *   AD9910_RAM_MODE_CONTINUOUS_RAMP  (=3): 实测是 "循环双向", 非回文数据会频率减半
+     *   AD9910_RAM_MODE_CONTINUOUS_BIDIR (=4): 实测是 "循环单向环回", 波形频率与设置一致
+     * dds.c 里用 4 (CONTINUOUS_BIDIR 这个名字下的枚举值) 才是想要的"单向环回". */
+    AD9910_RAM_MODE_CONTINUOUS_RAMP = 3,   /* 实测行为: 循环双向 (慎用) */
+    AD9910_RAM_MODE_CONTINUOUS_BIDIR= 4,   /* 实测行为: 循环单向环回 (推荐) */
 } ad9910_ram_mode_t;
 
 typedef struct {

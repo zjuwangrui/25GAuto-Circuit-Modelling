@@ -148,7 +148,10 @@ static bool arb_load_ram_and_start(uint16_t n, double freq_hz, float amp01)
         .start_addr    = 0,
         .end_addr      = (uint16_t)(n - 1),
         .rate_divider  = rate_m,
-        .mode          = AD9910_RAM_MODE_CONTINUOUS_RAMP,
+        /* 与例子对齐: 用 mode = 4. 现测得 mode 3 芯片行为是"连续双向"
+         * (每 2048 样点一个循环, 非回文数据的波形频率会减半),
+         * mode 4 才是真正的"连续单向环回", 保证方波频率跟设置一致. */
+        .mode          = AD9910_RAM_MODE_CONTINUOUS_BIDIR,   /* = 4 */
         .no_dwell_high = false,
         .zero_crossing = false,
     };

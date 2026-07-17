@@ -439,20 +439,21 @@ void ad9910_ram_profile_config(uint8_t profile_n, const ad9910_ram_profile_t *cf
 void ad9910_ram_enable(uint32_t dest_mask)
 {
     /* 与实测例子完全对齐:
-     *   CFR1 = 0xC0400000 = bit31(RAM_EN) | bit30(dest MSB, 目的 ASF=10b) | bit22(禁 sinc)
+     *   CFR1 = 0xC0401000 = bit31(RAM_EN) | bit30(dest ASF) | bit22(禁 sinc) | bit12(清相位)
      *   CFR2 里 "ASF from single-tone profile" bit 5 关掉
-     *   FTW 寄存器 0x07 显式清 0
+     *   FTW / POW 寄存器显式清 0
      *
-     *   例子里 RAM 数据是无符号 14-bit ASF 值 (0..16383), 目的是 ASF (不是 Polar).
-     *   FTW=0 时 DAC 输出正比 ASF, 得到"直接播放 RAM 波形"的效果. */
+     *   bit 12 (Clear Phase Accumulator) 强制相位累加器归零, 让 cos(phase) = 1,
+     *   这样 DAC 摆幅达到 IOUT_FS 极限 (跟单音模式峰峰值一致). */
     ad9910_write32(AD9910_REG_CFR2, AD9910_CFR2_BASE & ~(1UL << 5));
-    ad9910_write32(AD9910_REG_FTW, 0x00000000UL);
+    ad9910_write32(AD9910_REG_FTW,  0x00000000UL);
+    ad9910_write16(AD9910_REG_POW,  0x0000);       /* 相位偏移强制 = 0 */
 
-    /* dest_mask 期望是 AD9910_CFR1_RAM_DEST_ASF (= 2<<29 = 0x40000000).
-     * 加上例子的 bit 22 = 0xC0400000. */
+    /* CFR1 = RAM_ENABLE | dest | bit22 | bit12 (清相位累加器) */
     uint32_t cfr1 = AD9910_CFR1_RAM_ENABLE
                   | (dest_mask & (3UL << 29))
-                  | (1UL << 22);
+                  | (1UL << 22)
+                  | (1UL << 12);
     ad9910_write32(AD9910_REG_CFR1, cfr1);
 }
 
