@@ -131,15 +131,13 @@ int main(void)
      *      2) 方波     dds_arb_square  (1000.0, 0.5f, 1.0f);
      *      3) 正弦     dds_tone_sine   (1000.0, 1.0f, 0.0f);
      *   任务表同理: 只 sched_register 你想要的那个。 */
-    //dds_arb_triangle(1000.0 /*Hz*/, 0.5f /*V*/);//1kHz, 695m偏置,370mVpp,876m,512m. 偏置不变，峰峰值减半。
-   dds_arb_square  (1000.0 /*Hz*/, 0.5f /*duty*/, 1.0f /*V*/);//频率500Hz，峰峰值376m，876m,512m，偏置694m
-
+  //  dds_arb_triangle(1000.0 /*Hz*/, 0.5f /*V*/);//1kHz, 695m偏置,370mVpp,876m,512m. 偏置不变，峰峰值减半。
+//  dds_arb_square  (1000.0 /*Hz*/, 0.5f /*duty*/, 1.0f /*V*/);//频率500Hz，峰峰值376m，876m,512m，偏置694m
+    dds_tone_sine(1000.0, 0.2f, 0.0f);//500mV偏置
     /* ---- 调度器 ---- */
     sched_init();
    // sched_register(&t_triangle);    /* 持续维持三角波输出 */
     //sched_register(&t_square);      /* 持续维持方波输出   */
-    //dds_tone_sine(1000.0, 1.0f, 0.0f);
-   // dds_arb_dc(1.0f);
     sched_register(&t_ui);
 
     sched_run_forever();

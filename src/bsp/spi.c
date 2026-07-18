@@ -5,7 +5,7 @@ SPI_HandleTypeDef hspi1;
 /* SPI1 GPIO：
  *   PA5  SCK    AF_PP  高速
  *   PA6  MISO   浮空输入
- *   PA7  MOSI   AF_PP  高速
+ *   PA7  MOSI   AF_PP  高速 ad9910的SDIO
  * CS 各外设自己在自己驱动里配置，不占用 SPI 模块。
  */
 void MX_SPI1_Init(void)

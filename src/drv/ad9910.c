@@ -42,14 +42,10 @@
 #define AD9910_PROF1_PIN      GPIO_PIN_13
 #define AD9910_PROF2_PIN      GPIO_PIN_14
 
+//以下为可选引脚
+
 #define AD9910_OSK_PORT       GPIOB
 #define AD9910_OSK_PIN        GPIO_PIN_15
-
-/* --- 下面三根 "AD9910 datasheet 明确要求不能悬空" 的引脚 ---
- *  就算单音模式不用它们的功能，也必须由 MCU 拉低 (或硬件短到 GND)，
- *  否则芯片可能随机进入 power-down / 冻结 DRG / 反向斜坡。*/
-#define AD9910_PWR_PORT       GPIOC
-#define AD9910_PWR_PIN        GPIO_PIN_0    /* EXT_PWR_DWN, 高 → 芯片关机 */
 
 #define AD9910_DPH_PORT       GPIOC
 #define AD9910_DPH_PIN        GPIO_PIN_1    /* DRHOLD,      高 → DRG 冻结 */
@@ -248,10 +244,6 @@ static void ad9910_gpio_init(void)
 
     g.Pin = AD9910_OSK_PIN;      HAL_GPIO_Init(AD9910_OSK_PORT,   &g);
     AD9910_OSK_LO();
-
-    /* PWR / DPH / DRC —— datasheet 要求"不用则接地"，用 MCU 拉低效果一样 */
-    g.Pin = AD9910_PWR_PIN;      HAL_GPIO_Init(AD9910_PWR_PORT,   &g);
-    HAL_GPIO_WritePin(AD9910_PWR_PORT, AD9910_PWR_PIN, GPIO_PIN_RESET);
 
     g.Pin = AD9910_DPH_PIN;      HAL_GPIO_Init(AD9910_DPH_PORT,   &g);
     HAL_GPIO_WritePin(AD9910_DPH_PORT, AD9910_DPH_PIN, GPIO_PIN_RESET);

@@ -129,17 +129,18 @@ typedef struct {
 } ad9910_tone_t;
 
 /* RAM playback profile 参数 (对应 profile 寄存器在 RAM 模式下的解读) */
+/* AD9910 datasheet Table 13 RAM Operating Modes (CFR-profile bits [2:0]) */
 typedef enum {
-    AD9910_RAM_MODE_DIRECT_SWITCH   = 0,   /* 由 profile 引脚直接选一个 RAM 字 */
-    AD9910_RAM_MODE_RAMP_UP         = 1,   /* start → end 走一遍 */
-    AD9910_RAM_MODE_BIDIRECTIONAL   = 2,   /* start → end → start */
-    /* 注意: 下面这两个名字与实测行为反了 (datasheet 描述含糊):
-     *   AD9910_RAM_MODE_CONTINUOUS_RAMP  (=3): 实测是 "循环双向", 非回文数据会频率减半
-     *   AD9910_RAM_MODE_CONTINUOUS_BIDIR (=4): 实测是 "循环单向环回", 波形频率与设置一致
-     * dds.c 里用 4 (CONTINUOUS_BIDIR 这个名字下的枚举值) 才是想要的"单向环回". */
-    AD9910_RAM_MODE_CONTINUOUS_RAMP = 3,   /* 实测行为: 循环双向 (慎用) */
-    AD9910_RAM_MODE_CONTINUOUS_BIDIR= 4,   /* 实测行为: 循环单向环回 (推荐) */
+    AD9910_RAM_MODE_DIRECT_SWITCH   = 0,   /* 000: direct switch (PROFILE 引脚选一个字) */
+    AD9910_RAM_MODE_RAMP_UP         = 1,   /* 001: ramp-up (start→end 走一遍) */
+    AD9910_RAM_MODE_BIDIRECTIONAL   = 2,   /* 010: bidirectional ramp (start→end→start 一次) */
+    AD9910_RAM_MODE_CONT_BIDIR      = 3,   /* 011: continuous BIDIRECTIONAL (连续双向, 非回文数据频率会减半) */
+    AD9910_RAM_MODE_CONT_RECIRC     = 4,   /* 100: continuous RECIRCULATE (连续单向环回, 常规选这个) */
+    /* 保留旧名字以避免破坏依赖 (但语义已按 datasheet 修正) */
+    AD9910_RAM_MODE_CONTINUOUS_RAMP  = AD9910_RAM_MODE_CONT_BIDIR,   /* 曾用名, 实际是双向 */
+    AD9910_RAM_MODE_CONTINUOUS_BIDIR = AD9910_RAM_MODE_CONT_RECIRC,  /* 曾用名, 实际是单向 */
 } ad9910_ram_mode_t;
+
 
 typedef struct {
     uint16_t          start_addr;   /* 0..1023 */
