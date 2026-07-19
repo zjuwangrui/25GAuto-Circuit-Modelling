@@ -109,17 +109,12 @@ core/           调度器 + 环形缓冲
 $$H_{fit}(s) = \frac{4.68}{1.23 \times 10^{-8} s^2 + 3.48 \times 10^{-4} s + 1}$$
 
 - ωn ≈ 9017 rad/s ≈ 1435 Hz，ζ ≈ 1.57（过阻尼，两实极点 ~518 Hz / ~3990 Hz）
-- DC 增益 = 4.68，前级放大 5.11× → **总 DC 增益 ≈ 23.9**
+- DC 增益 = 4.68，前级放大 5.00× → **总 DC 增益 ≈ 23.4**
 - 系数在 [src/module/signal_out.c](src/module/signal_out.c) 里 `H_S_COEF_*` / `H_S_DC_GAIN` 三个宏
 - 放大倍数在 [include/module/signal_out.h](include/module/signal_out.h) 里 `SIGNAL_OUT_AMP_GAIN`
 
+
 ---
-
-## 上电后应该看到什么
-
-- **UART1 (115200)** 每次按屏按钮都打一行日志
-- **屏 FILTER_TYPE 控件**：`LOWPASS` / `HIGHPASS` / … (学习完成后 MCU 推)
-- **示波器 OUT+**：按屏上"输出信号"按钮后，输出用户设置的 freq + vpp 的正弦
 
 ---
 
