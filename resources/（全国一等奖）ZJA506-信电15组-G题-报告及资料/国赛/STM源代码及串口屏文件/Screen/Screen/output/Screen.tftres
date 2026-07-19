@@ -3,7 +3,7 @@
         <page name="Screen0" id="0" />
     </pages>
     <images>
-        <image id="0" url="d:\stm32projects\0电赛\!!!2025\2025 国赛\screen\screen\images\logo.png" effect_width="242" effect_height="139" />
+        <image id="0" url="d:\constructing_projects\25gauto-circuit-modelling\resources\（全国一等奖）zja506-信电15组-g题-报告及资料\国赛\stm源代码及串口屏文件\screen\screen\images\logo.png" effect_width="242" effect_height="139" />
     </images>
     <waves />
 </Resource>

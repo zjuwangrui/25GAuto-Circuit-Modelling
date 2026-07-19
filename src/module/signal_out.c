@@ -1,13 +1,13 @@
 /*
- * signal_out.c —— 目标输出信号反算, 补偿硬件后级 (×4 + H(s))
+ * signal_out.c —— 目标输出信号反算, 补偿硬件后级 (×N + H(s))
  *
- * H(s) = 5 / (1e-8·s² + 3e-4·s + 1)
+ * H_fit(s) = 4.68 / (1.23e-8·s² + 3.48e-4·s + 1)
  *
- * 对正弦稳态 (s = jω):
- *   |H(jω)| = 5 / sqrt( (1 - 1e-8·ω²)² + (3e-4·ω)² )
+ * 对正弦稳态 (s = jω, ω = 2πf):
+ *   |H(jω)| = 4.68 / sqrt( (1 - 1.23e-8·ω²)² + (3.48e-4·ω)² )
  *
  * 反算 (差分 Vpp):
- *   V_ad9910 = V_target / (4 · |H(jω)|)
+ *   V_ad9910 = V_target / (SIGNAL_OUT_AMP_GAIN · |H(jω)|)
  */
 
 #include "module/signal_out.h"
@@ -24,10 +24,10 @@
 
 #define TWO_PI              6.28318530717958647692
 
-/* H(s) 系数 (代码里改电路只用改这几行) */
-#define H_S_COEF_S2         1e-8       /* s² 项 */
-#define H_S_COEF_S1         3e-4       /* s¹ 项 */
-#define H_S_DC_GAIN         5.0f       /* DC 增益 (常数项分子/分母) */
+/* H_fit(s) 系数 (电路改了改这几行) */
+#define H_S_COEF_S2         1.23e-8    /* s² 项系数 */
+#define H_S_COEF_S1         3.48e-4    /* s¹ 项系数 */
+#define H_S_DC_GAIN         4.68f      /* DC 增益 (分子常数) */
 
 /* LCD 提示位置 (贴屏幕底部, 一行 15px 高) */
 #define WARN_LCD_X          0

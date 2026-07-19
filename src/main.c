@@ -73,6 +73,7 @@ int main(void)
     /* ---- BSP ---- */
     MX_GPIO_Init();
     MX_USART1_UART_Init();          /* 调试口 (UART_Printf 走这里) */
+    MX_USART2_UART_Init();          /* 大彩串口屏 PA2/PA3 @115200 */
 
     /* ---- 通用模块 & 驱动 ---- */
     ui_init();
@@ -80,7 +81,7 @@ int main(void)
 
     /* ---- 调度器 ---- */
     sched_init();
-    sched_register(&t_ui);
-    sched_register(&t_signal_out);  // 
+    //sched_register(&t_signal_out);  // 
+    dds_tone_sine(1000.0, 1.0f, 0.0f);          /* 上电即输出 1kHz/0.5Vpp 正弦 */
     sched_run_forever();
 }

@@ -1,0 +1,10 @@
+"./adc12_simultaneous_trigger_event.o"
+"./ti_msp_dl_config.o"
+"./startup_mspm0g351x_ticlang.o"
+"./FFT/CFFT.o"
+"./LCD_Driver/LCD.o"
+"./dsp_9910/dsp_9910.o"
+-l"./device_linker.cmd"
+-ldevice.cmd.genlibs
+-llibc.a
+-l"D:/APPS/TIM0/mspm0_sdk_2_05_01_00/source/third_party/CMSIS/DSP/lib/ticlang/m0p/arm_cortexM0l_math.a"

@@ -7,7 +7,12 @@
  * 未链接 drv/esp8266.c 时使用此空壳，避免链接错误。 */
 __attribute__((weak)) void ESP_UART_IRQHandler(void) {}
 
+/* 串口屏 (USART2) 单字节 RX 回调 —— 弱符号缺省实现：
+ * 未链接 drv/serial_screen.c 时安全无副作用. */
+__attribute__((weak)) void SCREEN_UART_IRQHandler(uint8_t byte) { (void)byte; }
+
 UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 static char _printf_buf[UART_PRINTF_BUF_SZ];
@@ -44,6 +49,69 @@ void MX_USART1_UART_Init(void)
     huart1.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_UART_Init(&huart1) != HAL_OK)
         while (1);
+}
+
+/* ------------------------------------------------------------------ */
+/*  MX_USART2_UART_Init — 大彩串口屏 PA2(TX) / PA3(RX)  115200 8N1     */
+/*  RX 走 IRQ, 每收到一字节调用 SCREEN_UART_IRQHandler(byte)            */
+/* ------------------------------------------------------------------ */
+void MX_USART2_UART_Init(void)
+{
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_USART2_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpio = {0};
+
+    gpio.Pin   = GPIO_PIN_2;          /* PA2 TX */
+    gpio.Mode  = GPIO_MODE_AF_PP;
+    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOA, &gpio);
+
+    gpio.Pin   = GPIO_PIN_3;          /* PA3 RX */
+    gpio.Mode  = GPIO_MODE_INPUT;
+    gpio.Pull  = GPIO_PULLUP;         /* 空闲高, 抗噪 */
+    HAL_GPIO_Init(GPIOA, &gpio);
+
+    huart2.Instance          = USART2;
+    huart2.Init.BaudRate     = 115200;
+    huart2.Init.WordLength   = UART_WORDLENGTH_8B;
+    huart2.Init.StopBits     = UART_STOPBITS_1;
+    huart2.Init.Parity       = UART_PARITY_NONE;
+    huart2.Init.Mode         = UART_MODE_TX_RX;
+    huart2.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_UART_Init(&huart2) != HAL_OK)
+        while (1);
+
+    /* 直接使能 RXNE 中断 (比 HAL_UART_Receive_IT 更省事: 不用每次重装) */
+    __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+    HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART2_IRQn);
+}
+
+/* USART2 阻塞发送 —— 串口屏命令一般短, 阻塞即可 */
+void UART2_SendByte(uint8_t byte)
+{
+    HAL_UART_Transmit(&huart2, &byte, 1, HAL_MAX_DELAY);
+}
+
+void UART2_SendBytes(const uint8_t *data, uint16_t len)
+{
+    HAL_UART_Transmit(&huart2, (uint8_t *)data, len, HAL_MAX_DELAY);
+}
+
+/* USART2 中断服务 —— 每收到一字节, 转发给 drv/serial_screen 里的
+ * SCREEN_UART_IRQHandler(byte) 状态机. 空闲时是弱空壳, 不影响别的模块. */
+void USART2_IRQHandler(void)
+{
+    if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE)) {
+        uint8_t b = (uint8_t)(huart2.Instance->DR & 0xFFU);   /* 读 DR 自动清 RXNE */
+        SCREEN_UART_IRQHandler(b);
+    }
+    /* 其它标志 (ORE/FE/PE) 一并读一下清掉, 避免卡死 */
+    if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_ORE)) {
+        (void)huart2.Instance->DR;
+    }
 }
 
 /* ------------------------------------------------------------------ */

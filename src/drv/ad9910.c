@@ -35,7 +35,7 @@
 #define AD9910_RESET_PIN      GPIO_PIN_3
 
 #define AD9910_IOUP_PORT      GPIOA
-#define AD9910_IOUP_PIN       GPIO_PIN_3
+#define AD9910_IOUP_PIN       GPIO_PIN_12
 
 #define AD9910_PROF_PORT      GPIOB
 #define AD9910_PROF0_PIN      GPIO_PIN_12
