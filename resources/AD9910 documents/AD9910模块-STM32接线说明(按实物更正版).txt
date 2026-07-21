@@ -14,7 +14,7 @@
     PA7             ->          SDIO                SPI 数据   (SPI1 MOSI, 只写)
     PA4             ->          CSB                 片选       (低有效, 软控)
     PC3             ->          RST                 MASTER_RESET (高电平复位)
-    PC4             ->          UPD                IO_UPDATE   (上升沿刷寄存器)
+    PA12             ->          UPD                IO_UPDATE   (上升沿刷寄存器)
     PB12            ->          PF0            (PF0,PF2,PF2的功能描述)Mode 4 跳频用. 单音模式下必须为低电平,否则输出可能偶发丢失.
     PB13            ->          PF1            推荐做法二选一:
                                                 A) 三根线连到 STM32, 让驱动拉低

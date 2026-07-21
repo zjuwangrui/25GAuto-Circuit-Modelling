@@ -63,7 +63,7 @@ static void SystemClock_Config(void)
 
 /* ===== 任务表 (在这里增删) ===== */
 static sched_task_t t_ui        = { .run = ui_task,       .period_ms = 100,  .name = "ui"  };
-static sched_task_t t_signal_out = { .run = signal_out_task, .period_ms = 1000, .name = "sigout" };
+static sched_task_t t_signal_out = { .run = signal_out_task, .period_ms = 3000, .name = "sigout" };
 int main(void)
 {
     /* ---- 内核 ---- */
@@ -81,7 +81,9 @@ int main(void)
 
     /* ---- 调度器 ---- */
     sched_init();
-    //sched_register(&t_signal_out);  // 
-    dds_tone_sine(1000.0, 1.0f, 0.0f);          /* 上电即输出 1kHz/0.5Vpp 正弦 */
+    signal_out_set(100.0, 1.5f);       
+   //dds_tone_sine(1000.0, 1.0f, 0.0f);          /* 上电即输出 1kHz/1Vpp 正弦 */
+    sched_register(&t_signal_out);//打印信息
+    //dds_tone_sine(1000.0, 1.0f, 0.0f);          /* 上电即输出 1kHz/0.5Vpp 正弦 */
     sched_run_forever();
 }

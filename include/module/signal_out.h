@@ -44,7 +44,7 @@
 
 /* 硬件电路后级放大倍数 (AD9910 输出 → H(s) 入口) */
 #ifndef SIGNAL_OUT_AMP_GAIN
-#define SIGNAL_OUT_AMP_GAIN     5.00f
+#define SIGNAL_OUT_AMP_GAIN     5.80f
 #endif
 
 void signal_out_init(void);
