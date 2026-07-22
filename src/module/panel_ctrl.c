@@ -1,45 +1,35 @@
 /*
- * panel_ctrl.c —— 串口屏 <-> 业务模块 胶水层
+ * panel_ctrl.c —— 串口屏 ↔ signal_out 胶水层 (V5.1 协议)
  *
- * 只处理 4 个屏控件:
- *   1) 输出信号按钮 (0x2F) — 组合帧 04 11 2F [freq],[vpp] 00 FF → signal_out_set
- *   2) 学习按钮     (0x30) — 短触摸帧 FE 30 xx FF             → learning_start
- *   3) 推理按钮     (0x31) — 短触摸帧 FE 31 xx FF             → inference_start
- *   4) 滤波类型文本 (0x60) — 学习完成后 MCU 推送到屏
+ * 只处理 3 个控件:
+ *   频率输入 (ctrl_id=4,  文本 type=0x11)  → 缓存 last_freq
+ *   电压输入 (ctrl_id=7,  文本 type=0x11)  → 缓存 last_vpp
+ *   输出按钮 (ctrl_id=11, 按钮 type=0x10)  → signal_out_set(last_freq, last_vpp)
  *
- * ISR 上下文 (screen 回调) 只做最小工作: 存 pending 标志 + 参数.
- * 真正动作在 panel_ctrl_task 里做, 避开 ISR 里调 SPI/HAL_Delay 的坑.
+ * ISR 上下文只置 flag + 存参数, 真正动作在 panel_ctrl_task 里做.
  */
 
 #include "module/panel_ctrl.h"
 #include "drv/serial_screen.h"
 #include "module/signal_out.h"
-#include "module/learning.h"
-#include "module/inference.h"
+#include "module/dds.h"
 #include "bsp/uart.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* ==================================================================
- *  ISR 与 task 之间的通信 (待办 flag)
+ *  ISR 与 task 之间: 待办 flag + 参数缓存
  * ================================================================== */
-
-static volatile bool     s_pending_output = false;
-static volatile double   s_new_freq       = 0.0;
-static volatile float    s_new_vpp        = 0.0f;
-
-static volatile bool     s_pending_learn  = false;
-static volatile bool     s_pending_infer  = false;
-
-/* learning 状态跟踪 (完成时推一次滤波类型到屏, 不重复) */
-static learn_state_t s_last_learn_state    = LEARN_IDLE;
-static bool          s_learn_result_pushed = false;
+static volatile bool     s_pending_output     = false;    /* 输出信号按钮 (走 signal_out_set) */
+static volatile bool     s_pending_raw_output = false;    /* 原始输出按钮 (直调 dds_tone_sine, 幅度固定 0.6V) */
+static volatile double   s_last_freq_v        = 1000.0;   /* 默认 1kHz */
+static volatile float    s_last_vpp_v         = 1.0f;     /* 默认 1V   */
 
 /* ==================================================================
  *  ASCII → 数字 (支持负号 / 小数点)
  * ================================================================== */
-static double ascii_slice_to_double(const uint8_t *s, uint8_t n)
+static double parse_ascii_double(const uint8_t *s, uint8_t n)
 {
     if (!s || n == 0) return 0.0;
     char tmp[16];
@@ -49,52 +39,57 @@ static double ascii_slice_to_double(const uint8_t *s, uint8_t n)
     return atof(tmp);
 }
 
-/* 从 "freq,vpp" 字符串里拆出两个数值.
- * 返回 true = 成功找到逗号且拆出两段, false = 格式错. */
-static bool parse_freq_vpp(const uint8_t *s, uint8_t n, double *out_f, float *out_v)
-{
-    uint8_t comma_pos;
-    for (comma_pos = 0; comma_pos < n; ++comma_pos) {
-        if (s[comma_pos] == ',') break;
-    }
-    if (comma_pos == 0 || comma_pos >= n - 1) return false;
-
-    *out_f = ascii_slice_to_double(s, comma_pos);
-    *out_v = (float)ascii_slice_to_double(s + comma_pos + 1,
-                                          (uint8_t)(n - comma_pos - 1));
-    return true;
-}
-
 /* ==================================================================
- *  drv/serial_screen 回调 —— 在 ISR 上下文
+ *  drv/serial_screen 帧回调 (中断上下文)
  * ================================================================== */
-
-static void on_touch(uint8_t d0, uint8_t d1)
+static void on_frame(uint16_t screen_id, uint16_t ctrl_id, uint8_t ctrl_type,
+                     const uint8_t *payload, uint8_t payload_len)
 {
-    /* 短触摸帧 FE [d0] [d1] FF. d0 = 按钮 ID. */
-    (void)d1;
-    switch (d0) {
-    case SCREEN_BTN_LEARN: s_pending_learn = true; break;
-    case SCREEN_BTN_INFER: s_pending_infer = true; break;
-    default: break;
-    }
-}
+    (void)screen_id;
+    (void)ctrl_type;
 
-static void on_input(const uint8_t *p, uint8_t n)
-{
-    /* 长输入帧 04 11 [ctrl_id] [payload] 00 FF.
-     * 目前只有一种: 输出信号按钮 (0x2F), payload = "freq,vpp" ASCII */
-    if (n < 4) return;                    /* 至少 id + "0,0" */
-    uint8_t ctrl_id = p[0];
+    switch (ctrl_id) {
+    case SCREEN_CTRL_FREQ_INPUT:
+        /* 文本控件, payload = ASCII 数字字符串 */
+        s_last_freq_v = parse_ascii_double(payload, payload_len);
+        /* 中断里打印是可以的 (UART_Printf 阻塞发送, 只是慢),
+         * 排查完把这行删掉 */
+        UART_Printf("[panel][ISR] FREQ input: len=%u ascii=\"%.*s\" parsed=%.4f\r\n",
+                    (unsigned)payload_len, (int)payload_len, (const char *)payload,
+                    (double)s_last_freq_v);
+        break;
 
-    if (ctrl_id == SCREEN_BTN_OUTPUT_SIGNAL) {
-        double f;
-        float  v;
-        if (parse_freq_vpp(p + 1, (uint8_t)(n - 1), &f, &v)) {
-            s_new_freq       = f;
-            s_new_vpp        = v;
+    case SCREEN_CTRL_VPP_INPUT:
+        s_last_vpp_v = (float)parse_ascii_double(payload, payload_len);
+        UART_Printf("[panel][ISR] VPP  input: len=%u ascii=\"%.*s\" parsed=%.4f\r\n",
+                    (unsigned)payload_len, (int)payload_len, (const char *)payload,
+                    (double)s_last_vpp_v);
+        break;
+
+    case SCREEN_CTRL_OUTPUT_BTN:
+        /* 按钮 (Ctrl_type=0x10) payload = [Subtype:1B, Status:1B].
+         * 只在 Status=0x01 (按下) 时触发, Status=0x00 (松开) 忽略,
+         * 避免一次点击触发两次 signal_out_set. */
+        if (ctrl_type == 0x10 &&
+            payload_len >= 2 &&
+            payload[payload_len - 1] == 0x01) {
             s_pending_output = true;
         }
+        break;
+
+    case SCREEN_CTRL_RAW_OUTPUT_BTN:
+        /* 原始输出按钮: 直接 dds_tone_sine(freq, 0.6V), 不走 signal_out_set,
+         * 不做 H(s) 反算. 用来做电路校准/裸测试. */
+        if (ctrl_type == 0x10 &&
+            payload_len >= 2 &&
+            payload[payload_len - 1] == 0x01) {
+            s_pending_raw_output = true;
+        }
+        break;
+
+    default:
+        /* 未知控件 ID, 忽略 */
+        break;
     }
 }
 
@@ -105,45 +100,30 @@ static void on_input(const uint8_t *p, uint8_t n)
 void panel_ctrl_init(void)
 {
     screen_init();
-    screen_on_touch(on_touch);
-    screen_on_input(on_input);
+    screen_on_frame(on_frame);
 }
 
 void panel_ctrl_task(void)
 {
-    /* ---- 1. 输出信号 ---- */
     if (s_pending_output) {
         s_pending_output = false;
+        double f = s_last_freq_v;
+        float  v = s_last_vpp_v;
         UART_Printf("[panel] OUTPUT btn: signal_out_set(%.2f Hz, %.3f V)\r\n",
-                    s_new_freq, (double)s_new_vpp);
-        signal_out_set(s_new_freq, s_new_vpp);
+                    f, (double)v);
+        signal_out_set(f, v);
     }
 
-    /* ---- 2. 学习 ---- */
-    if (s_pending_learn) {
-        s_pending_learn = false;
-        UART_Printf("[panel] LEARN btn\r\n");
-        learning_start();
-        s_learn_result_pushed = false;   /* 新一轮学习, 允许结果重新推屏 */
-    }
-
-    /* ---- 3. 推理 (无屏回推) ---- */
-    if (s_pending_infer) {
-        s_pending_infer = false;
-        UART_Printf("[panel] INFER btn\r\n");
-        inference_start();
-    }
-
-    /* ---- 4. 学习完成 → 只推滤波类型到屏 ---- */
-    learn_state_t ls = learning_get_state();
-    if (ls != s_last_learn_state) {
-        s_last_learn_state = ls;
-    }
-    if (ls == LEARN_DONE && !s_learn_result_pushed) {
-        const learn_result_t *r = learning_get_result();
-        screen_set_text(SCREEN_TEXT_FILTER_TYPE, learning_filter_name(r->type));
-        UART_Printf("[panel] push filter type -> %s\r\n",
-                    learning_filter_name(r->type));
-        s_learn_result_pushed = true;
+    if (s_pending_raw_output) {
+        s_pending_raw_output = false;
+        double f = s_last_freq_v;
+        /* 多种格式打印, 排查值传递问题 */
+        UART_Printf("[panel] RAW OUTPUT btn ==========================\r\n");
+        UART_Printf("        s_last_freq_v = %.6f Hz\r\n", (double)s_last_freq_v);
+        UART_Printf("        local f       = %.6f Hz  (%e)\r\n", f, f);
+        UART_Printf("        as int        = %ld\r\n", (long)f);
+        UART_Printf("        about to call: dds_tone_sine(%.2f, 0.6f, 0.0f)\r\n", f);
+        dds_tone_sine(f, 0.6f, 0.0f);
+        UART_Printf("        dds_tone_sine returned OK\r\n");
     }
 }

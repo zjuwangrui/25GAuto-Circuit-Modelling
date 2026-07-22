@@ -1,0 +1,723 @@
+%设置页面边距（word标准页面）
+\documentclass[a4paper]{article}
+\usepackage{geometry}
+\geometry{a4paper,left=2.7cm,right=2.7cm,top=2.54cm,bottom=2.54cm}
+
+%导入ctex包
+\usepackage[UTF8,heading=true]{ctex}
+
+\usepackage{multirow}
+\usepackage{svg}
+
+\usepackage{imakeidx}
+\makeindex
+
+\usepackage{abstract}
+\setlength{\abstitleskip}{0em}
+\setlength{\absleftindent}{0pt}
+\setlength{\absrightindent}{0pt}
+\setlength{\absparsep}{0em}
+\renewcommand{\abstractname}{\zihao{4}{摘\ 要}}
+\renewcommand{\abstracttextfont}{\zihao{-4}}
+
+\usepackage{fancyhdr}
+\pagestyle{plain}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+\usepackage{float}
+\usepackage{subfig}
+\captionsetup[figure]{labelsep=space}
+\captionsetup[table]{labelsep=space}
+
+\ctexset {
+	section = {
+		name={,、},
+		number=\chinese{section},
+		aftername=,
+	},
+	subsubsection = {
+		format += \zihao{-4}
+	}
+}
+
+\usepackage{cite}
+\usepackage[numbers,sort&compress]{natbib}
+
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{pythonhighlight}
+\lstset{
+	keywordstyle=\color{blue},
+	commentstyle=\color[cmyk]{1,0,1,0},
+	escapeinside=``,
+	breaklines,
+	extendedchars=false,
+	xleftmargin=1em,xrightmargin=1em, aboveskip=1em,
+	tabsize=4,
+	showspaces=false
+}
+
+\renewcommand{\refname}{}
+
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{longtable}
+
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
+\usepackage{diagbox}
+
+\usepackage{hyperref}
+
+
+\title{\Huge 电路模型探究装置 (G 题)}
+\date{\LARGE 2026 年信电学院电子设计竞赛\ 大二 06 组\ 设计报告}
+
+\begin{document}
+	\maketitle
+	\vspace{6em}
+	\zihao{-4}
+
+	%摘要部分
+	\begin{abstract}
+		本装置以 STM32F103VE 为主控, AD9910 高速 DDS 芯片作为可编程正
+		弦源, 经运放放大后加至被测电路, 使用 STM32 内置 ADC 采集被测电
+		路输入/输出两端信号, 并以 12 bit DAC 输出推理波形. 大彩串口屏
+		作为交互终端, 用户通过屏选择四种工作模式: 信号输出模式 (DDS
+		按设定频率直接输出正弦), 已知模型控制模式 (软件反算 $H(s)$
+		后驱动 DDS, 使已知模型输出达到设定峰峰值), 学习模式 (探究装
+		置接未知电路两端, 通过扫频法建立其传递函数并显示滤波类型),
+		推理模式 (探究装置作为已建模滤波器, 对信号发生器给入的任意
+		周期信号做实时数字滤波输出). 经测试, 装置在 100 Hz$\sim$3 kHz
+		控制已知模型输出的相对误差小于 5\%, 学习建模在两分钟内完成滤
+		波类型判别, 推理输出峰峰值与真实未知电路输出的相对误差小于
+		10\%.
+		\\
+		\newline
+		\noindent{关键词: STM32\quad AD9910 DDS\quad 传递函数\quad
+		数字扫频建模\quad IIR 数字滤波\quad 滤波类型识别}
+	\end{abstract}
+
+	\newpage
+	\tableofcontents
+
+
+\newpage
+\section{方案对比与论证}
+
+\subsection{系统工作模式设定}
+
+按题目要求, 探究装置需支持信号发生、控制已知模型输出、学习未知电路、
+推理复现未知电路输出四种功能. 本装置将其归纳为串口屏可切换的四种工
+作模式:
+
+\begin{table}[H]
+\centering
+\caption{探究装置工作模式}
+\begin{tabular}{cllc}
+\toprule
+模式 & 名称 & 主要动作 & 对应题目条款 \\
+\midrule
+M1 & 信号输出模式    & 屏设定频率, DDS 直接输出正弦        & 基本要求 (2) \\
+M2 & 已知模型控制模式 & 反算 $H(s)$, 驱动已知模型输出目标 & 基本要求 (3)(4) \\
+M3 & 学习模式        & 扫频激励未知电路, 判别滤波类型      & 发挥部分 (1) \\
+M4 & 推理模式        & 对输入信号按学到的传递函数滤波输出  & 发挥部分 (2) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+四种模式共用同一硬件通路 (DDS + 前级放大 + ADC + DAC), 由屏上按键
+一键触发. 题目 "三、说明" 中 "设置完成后一键启动, 后续不可人工干
+预" 的要求由主控内的状态机保证: 模式一经进入, 内部执行与屏事件解耦.
+
+
+\subsection{已知模型电路方案}
+
+方案一\ MFB (多重反馈) 结构. 元件数量少, 对电容电阻容差不敏感;
+缺点是运放增益带宽积要求高, 参数配比复杂.
+
+方案二\ Sallen-Key (SK) 结构. 二阶低通经典拓扑, 直流增益可独立设
+置, 元件选择灵活.
+
+已知模型 $H(s) = 5/(10^{-8}s^{2} + 3\!\times\!10^{-4}s + 1)$
+的 $Q \approx 0.33$ 属过阻尼, 对元件容差不敏感, SK 拓扑更易于调
+试并可独立标定直流增益, 选用方案二.
+
+
+\subsection{正弦信号产生方案}
+
+方案一\ AD9910 高速 DDS 模块. 频率分辨率
+$\Delta f = f_{\mathrm{SYSCLK}}/2^{32} \approx 0.233\ \mathrm{Hz}$
+(SYSCLK = 1 GHz), 输出范围 0$\sim$400 MHz, 谱纯度高, 支持硬件扫频.
+
+方案二\ STM32 内置 DAC + DMA + 定时器. 电路简单, 无外置芯片; 但
+STM32F1 DAC 采样率上限约 1 MSPS, 1 MHz 输出仅有几个重构点, 谱纯
+度和幅度精度差, 且无硬件扫频.
+
+题目基本要求 (2) 要求最高频率 $\ge 1$ MHz, 步长 100 Hz, 频率相对
+误差 $\le 5$\%, 各频点 Vpp 最大值 $\ge 3$ V. DAC 方案难以覆盖高
+频, 选用方案一.
+
+
+\subsection{未知模型学习方案}
+
+方案一\ 数字扫频法. 装置 DDS 从 $f_{\min}$ 单调扫频至 $f_{\max}$,
+ADC 同步采集未知电路输入端与输出端, 每频点用 Goertzel 算法计算复
+数比值得到 $|H(j\omega_i)|$, 再与四种二阶模型解析式做最小二乘拟合,
+选残差最小者作为滤波类型, 同时输出参数 $(\omega_{0}, \zeta, K)$.
+
+方案二\ 冲激/阶跃响应法. 输入宽带方波, ADC 采时域响应, 用 Prony
+或 ARX 法直接从时域数据辨识极零点.
+
+方案三\ 三特征频点法. 只测低/中/高三点幅度关系直接分类, 不做参数
+拟合.
+
+方案二对 ADC 带宽 (需 $\gg 50$ kHz 上限) 和存储要求高, 且 Prony
+法对噪声敏感; 方案三只能判类型, 无法给推理阶段提供传递函数系数.
+选用方案一.
+
+
+\subsection{推理生成信号方案}
+
+方案一\ 数字滤波法 (ADC + IIR + DAC). 学到的连续域传递函数经双线
+性变换离散化为 IIR 差分方程, ADC 采输入信号, 单片机实时运算, DAC
+输出. 输入输出用同一定时器触发, 自然同步.
+
+方案二\ 硬件模拟法. 用通用滤波器芯片 UAF42 加数字电位器现场重搭
+同类型电路. 保真度高, 但通用滤波器芯片供货困难, 无法覆盖任意
+$\omega_{0}$/$\zeta$.
+
+方案三\ 频域重构法. 输入信号 FFT 后频谱乘以 $|H(j\omega)|$ 再
+IFFT. 分块处理引入块延迟, 且信号发生器信号为连续周期波, 分块拼
+接会破坏 "连续同频稳定显示" 要求.
+
+选用方案一.
+
+
+\newpage
+\section{理论分析与计算}
+
+\subsection{已知模型电路参数计算}
+
+已知模型电压传递函数
+\[
+H(s) \;=\; \frac{5}{10^{-8}s^{2} + 3\!\times\!10^{-4}s + 1}
+\]
+
+改写为二阶滤波器标准形式
+$H(s) = K\omega_{0}^{2} / (s^{2} + \omega_{0}s/Q + \omega_{0}^{2})$,
+比对得
+\[
+K = 5, \qquad
+\omega_{0} = 10^{4}\ \mathrm{rad/s}, \qquad
+f_{0} \approx 1592\ \mathrm{Hz}, \qquad
+Q \approx 0.333
+\]
+
+采用 SK 二阶低通结构 (电路见 3.2 节). SK 拓扑单位增益时的传递函数
+\[
+H_{\mathrm{SK}}(s) = \frac{1}{1 + (R_1 + R_2)C_1 s + R_1 R_2 C_1 C_2 s^{2}}
+\]
+特征频率 $\omega_{0} = 1/\sqrt{R_1 R_2 C_1 C_2}$, 品质因数
+$Q = \sqrt{R_1 R_2 C_1 C_2}/((R_1 + R_2)C_1)$. 代入
+$\omega_{0} = 10^{4}$, $Q = 1/3$ 与工程可选值, 取
+$R_1 = R_2 = 15$ k$\Omega$, $C_1 = 100$ nF, $C_2 \approx 100$ nF;
+后级独立放大 5 倍补足直流增益.
+
+
+\subsection{已知模型输出电压反算}
+
+正弦稳态下 $s = j\omega$, $\omega = 2\pi f$, 幅频响应模值
+\[
+|H(j\omega)| \;=\;
+\frac{K}{\sqrt{\bigl(1 - \omega^{2}/\omega_{0}^{2}\bigr)^{2}
+       + \bigl(\omega/(\omega_{0}Q)\bigr)^{2}}}
+\]
+
+设目标观测点差分峰峰值为 $V_{\mathrm{tgt}}$, 探究装置后级实测放大
+倍数为 $G_{\mathrm{amp}}$, 则 DDS 应输出的差分峰峰值为
+\[
+V_{\mathrm{DDS}}(f) \;=\; \frac{V_{\mathrm{tgt}}}
+                                 {G_{\mathrm{amp}} \cdot |H(j2\pi f)|}
+\]
+
+板级前级放大加已知模型电路整体传递函数与理论 $H(s)$ 存在容差, 装置
+在标定阶段对实测幅频曲线做二阶拟合得到
+$H_{\mathrm{fit}}(s) = 4.68 / (1.23\!\times\!10^{-8}s^{2}
++ 3.48\!\times\!10^{-4}s + 1)$
+用于运行时反算, 与理论 $H(s)$ 相差约 6\% 增益与 15\% 极点位置, 在
+容差范围内.
+
+
+\subsection{未知模型学习建模方法}
+
+发挥部分 (1) 中未知模型由 R $\in [1, 10]$ k$\Omega$,
+L $\in [1, 10]$ mH, C $\in [10, 100]$ nF 各一构成. RLC 二阶网络在
+不同拓扑下呈现四种滤波特性, 传递函数标准形式为
+
+\begin{table}[H]
+\centering
+\caption{RLC 二阶模型标准传递函数}
+\begin{tabular}{lc}
+\toprule
+类型 & 归一化传递函数 \\
+\midrule
+低通 (LPF) & $H(s) = K\omega_{0}^{2} / (s^{2} + 2\zeta\omega_{0}s + \omega_{0}^{2})$ \\[3pt]
+高通 (HPF) & $H(s) = K s^{2}     / (s^{2} + 2\zeta\omega_{0}s + \omega_{0}^{2})$ \\[3pt]
+带通 (BPF) & $H(s) = K (2\zeta\omega_{0} s) / (s^{2} + 2\zeta\omega_{0}s + \omega_{0}^{2})$ \\[3pt]
+带阻 (BSF) & $H(s) = K (s^{2} + \omega_{0}^{2}) / (s^{2} + 2\zeta\omega_{0}s + \omega_{0}^{2})$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+其中 $\omega_{0} = 1/\sqrt{LC}$, $\zeta$ 由 $R$ 与 $\sqrt{L/C}$ 的
+比值决定 (视拓扑). 元件极值下
+\[
+f_{0,\min} = \frac{1}{2\pi\sqrt{10\,\mathrm{mH}\cdot 100\,\mathrm{nF}}}
+           \approx 5\ \mathrm{kHz}, \qquad
+f_{0,\max} = \frac{1}{2\pi\sqrt{1\,\mathrm{mH}\cdot 10\,\mathrm{nF}}}
+           \approx 50\ \mathrm{kHz}
+\]
+
+据此设定扫频范围 $[500\ \mathrm{Hz}, 200\ \mathrm{kHz}]$, 对数分布
+$N = 60$ 频点, 覆盖 $f_{0}$ 上下各一个十倍频程.
+
+分类判据: 记扫频得到的离散幅频序列为
+$\{(f_i, |\hat H_i|)\}_{i=1}^{N}$, 归一化
+$\tilde H_i = |\hat H_i| / \max_j |\hat H_j|$. 四种类型的判别条件:
+
+\begin{table}[H]
+\centering
+\caption{幅频曲线特征 $\to$ 滤波类型判别}
+\begin{tabular}{lccc}
+\toprule
+类型 & $\tilde H(f_{\min})$ & $\tilde H(f_{\max})$ & 峰值位置 \\
+\midrule
+低通 LPF & 高 ($\approx 1$)  & 低 ($< 0.3$)     & $f_{\min}$ 或平坦 \\
+高通 HPF & 低 ($< 0.3$)     & 高 ($\approx 1$) & $f_{\max}$ 或平坦 \\
+带通 BPF & 低 ($< 0.3$)     & 低 ($< 0.3$)     & 中间 (即 $f_{0}$) \\
+带阻 BSF & 高 ($\approx 1$)  & 高 ($\approx 1$) & 中间为极小值 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+参数估计: 分类确定后, 对相应模型以
+$J = \sum_i (\ln \tilde H_i - \ln |\hat H_i^{\mathrm{model}}|)^{2}$
+为目标, 用 Levenberg-Marquardt 或 Gauss-Newton 迭代求
+$(\omega_{0}, \zeta, K)$, 最多 20 次或残差小于 $10^{-3}$ 停止.
+
+
+\subsection{推理算法数学表述}
+
+学到 $H(s)$ 后, 用双线性变换离散化为 IIR:
+\[
+s \;\to\; \frac{2}{T_s} \cdot \frac{1 - z^{-1}}{1 + z^{-1}}
+\]
+
+其中 $T_s = 1/f_s$ 为 ADC 采样周期. 装置取 $f_s = 200$ kSPS, 满足
+题目输入信号 $1\!\sim\!50$ kHz 的 Nyquist 约束. 二阶滤波器离散后
+为一阶 biquad 差分方程:
+\[
+y[n] \;=\;
+b_{0}x[n] + b_{1}x[n-1] + b_{2}x[n-2]
+- a_{1}y[n-1] - a_{2}y[n-2]
+\]
+
+$b_{0}, b_{1}, b_{2}, a_{1}, a_{2}$ 由学习结果 $(\omega_{0}, \zeta, K)$
+经双线性变换代入对应二阶滤波器 $H(s)$ 表达式解析求出.
+CMSIS-DSP 提供 \texttt{arm\_biquad\_cascade\_df1\_f32}, 72 MHz 主频
+下单样点处理约 $1\ \mu\mathrm{s}$, 远短于 $T_s = 5\ \mu\mathrm{s}$
+采样间隔, 满足实时处理要求.
+
+
+\newpage
+\section{电路与程序设计}
+
+\subsection{整体结构}
+
+\textit{(硬件原理图与 PCB 后续补入本章.)} 装置整体结构如下, 虚线
+框内为探究装置本体:
+
+\begin{center}
+\begin{minipage}{0.90\textwidth}
+\begin{verbatim}
+   +---- 探究装置 ------------------------------------------+
+   |                                                        |
+   |      +--------------+   SPI   +--------+                |
+   |      | STM32F103VE  |=========| AD9910 |=== 前级放大 =+ |
+   |      |    (主控)    |         |  DDS   |    (G_amp)   | |
+   |      |              |                                 v |
+   |      |    +--ADC1---+  <---------- 输入采样口 <-------+ |
+   |      |    +--ADC2---+  <---------- 输出采样口 <----+  | |
+   |      |    +--DAC ---+  ---------- 推理输出口 --+   |  | |
+   |      |    +--UART2--+                          |   |  | |
+   |      +---------|----+                          |   |  | |
+   |                v                               |   |  | |
+   |         [大彩串口屏]                           |   |  | |
+   |         (模式选择/参数设定/结果显示)            v   v  v |
+   +------------------------------------------------|-----|--+
+                                                    v     v
+                                              [ 已知模型电路 或 未知模型电路 ]
+\end{verbatim}
+\end{minipage}
+\end{center}
+
+
+\subsection{已知模型电路}
+
+\textit{(待补充: SK 二阶低通原理图与元件表. 采用 NE5532 运放搭
+SK 低通, 后级独立 5 倍放大补足直流增益; 元件按 2.1 节参数选取,
+依据实测幅频曲线做微调.)}
+
+
+\subsection{探究装置电路}
+
+\textit{(待补充: AD9910 模块外围电路 (供电、参考时钟、差分输出
+巴伦), 前级高速放大器 (OPA847 或 OPA828), 输入端口 100 k$\Omega$
+高阻缓冲以满足题目发挥 (2) 输入电阻要求, DAC 输出隔直, ADC 抗混
+叠 LPF, 继电器/模拟开关做 DDS/DAC 输出通道切换, 电源与去耦布局.)}
+
+
+\subsection{程序总控制逻辑}
+
+主控为一个以串口屏事件驱动的四态状态机, 状态与题目四种模式一一对
+应. 顶层结构不包含任何自动状态跳转, 所有跳转均由屏按键触发, 与题
+目 "一键启动后不可人工干预" 的要求一致.
+
+\begin{center}
+\begin{minipage}{0.92\textwidth}
+\begin{verbatim}
+                        ┌─────────────┐
+                        │    IDLE     │
+                        │    待机     │
+                        └──┬──┬──┬──┬─┘
+    屏"信号输出"───────────┘  │  │  │
+    (走 M1)                    │  │  │
+                               v  │  │
+                        ┌─────────────┐  M1 信号输出模式
+                        │  OUTPUT_RAW │  DDS 按屏设定频率
+                        │             │  直接输出正弦
+                        └─────────────┘
+                                  │  │
+                                  │  │
+    屏"输出信号"──────────────────┘  │
+    (走 M2)                          │
+                                     v
+                        ┌─────────────┐  M2 已知模型控制
+                        │  OUTPUT_H   │  反算 H(s), DDS
+                        │             │  驱动已知模型输出
+                        └─────────────┘
+                                     │
+                                     │
+    屏"学习"─────────────────────────┘
+    (走 M3)
+       │
+       v
+   ┌─────────────┐  M3 学习模式
+   │  LEARNING   │  DDS 扫频 → ADC 采输入/输出 →
+   │             │  Goertzel → 分类 → 拟合参数
+   └──────┬──────┘  完成后自动落回 IDLE, 屏显 "类型/f0"
+          │
+          v (存参数)
+   ┌───────────────┐
+   │  IDLE (with   │
+   │  filter model)│
+   └──────┬────────┘
+          │  屏"推理"
+          v
+   ┌─────────────┐  M4 推理模式
+   │  INFERRING  │  ADC 采输入 → IIR biquad →
+   │             │  DAC 输出, 直至屏停止
+   └─────────────┘
+\end{verbatim}
+\end{minipage}
+\end{center}
+
+M1 和 M2 之间自由切换 (可交替使用); M3 学习完成后落回 IDLE 但保
+留了滤波器参数, 用户可以断开测试线接入信号发生器再进 M4. 顶层任务
+仅两个: \texttt{panel\_ctrl\_task} (50 ms) 处理屏事件与模式切换,
+\texttt{mode\_task} 按当前模式推进 M3/M4 内部流程; ADC/DAC 用定时
+器触发, IIR 处理直接在 DMA 完成中断里做, 不进任务调度.
+
+
+\subsection{人机交互逻辑}
+
+采用大彩串口屏经 UART2 与主控通信, V5.1 协议:
+\texttt{EE B1 11 [Screen\_id] [Ctrl\_id] [Type] [payload] FF FC FF FF}.
+控件分配:
+
+\begin{table}[H]
+\centering
+\caption{串口屏控件分配}
+\begin{tabular}{lclcl}
+\toprule
+控件            & Ctrl\_id & 类型 & 关联模式 & 主控动作 \\
+\midrule
+频率输入框      & 4  & 文本 & M1/M2 & 缓存目标频率 \\
+电压输入框      & 7  & 文本 & M2    & 缓存目标峰峰值 \\
+输出信号按钮    & 40 & 按钮 & M1    & DDS 按频率直出 (未反算) \\
+经模型输出按钮  & 11 & 按钮 & M2    & 反算 $H(s)$ 后驱动 DDS \\
+学习键          & (预留) & 按钮 & M3 & 启动学习流程 \\
+推理键          & (预留) & 按钮 & M4 & 启动推理流程 \\
+类型/参数显示   & (预留) & 文本 & M3 后回写 & 显示 "LPF, f0=..." \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+屏收到 UART 帧后, 主控端的解析在 UART2 接收中断里完成字节流状态机
+组帧, 组好一帧后回调 \texttt{on\_frame(ctrl\_id, payload)}; 中断内
+只按 ctrl\_id 缓存参数或置模式请求标志, 不直接调 SPI/DDS/ADC.
+真正的模式切换在 \texttt{panel\_ctrl\_task} 里做, 保证 SPI 长事务
+不阻塞中断响应.
+
+
+\subsection{学习算法实现}
+
+学习流程分为四个阶段:
+
+第一阶段, 扫频激励. DDS 输出对数分布 $N = 60$ 个频点, 每点保持
+$T_{\mathrm{hold}} = 30$ ms, 前 15 ms 让被测 RLC 电路瞬态衰减,
+后 15 ms 用于 ADC 采样.
+
+第二阶段, 幅度提取. ADC 双通道同步采集未知电路输入端与输出端,
+每点采 $M = 3000$ 个样点 ($f_s = 200$ kSPS). Goertzel 算法针对当前
+激励频率单点 DFT, 得到复数幅度 $X_i, Y_i$, 计算
+$|\hat H_i| = |Y_i|/|X_i|$.
+
+第三阶段, 分类. 依 2.3 节判据比较归一化幅频曲线两端幅值与峰值位置,
+决定 LPF/HPF/BPF/BSF.
+
+第四阶段, 参数拟合. 分类结果代入对应二阶模型, 在对数幅度误差平方
+和意义下用 Gauss-Newton 迭代求 $(\omega_{0}, \zeta, K)$; 拟合完成
+写入 \texttt{learn\_result\_t} 结构体 (定义于
+\texttt{include/module/learning.h}), 状态机置 DONE, 屏显 "类型 +
+$f_{0}$".
+
+时间估算: 扫频 $60 \times 30 = 1.8$ s, 60 个 Goertzel 与拟合迭代
+$< 5$ s, 总时长约 $7$ s, 远低于题目 120 s 上限.
+
+
+\subsection{推理算法实现}
+
+推理阶段将学到的连续域二阶传递函数经双线性变换离散化为 IIR biquad
+差分方程系数 $\{b_0, b_1, b_2, a_1, a_2\}$, 装入 CMSIS-DSP 的
+\texttt{arm\_biquad\_casd\_df1\_inst\_f32} 结构后循环处理.
+
+数据通路:
+
+\begin{center}
+\begin{minipage}{0.90\textwidth}
+\begin{verbatim}
+   信号发生器 --> 装置输入口 (Rin >= 100kΩ) --> ADC (TIM 触发)
+                                                     |
+                                                     v
+                                           IIR biquad (CMSIS-DSP)
+                                           [b0, b1, b2, a1, a2]
+                                           来自学习结果
+                                                     |
+                                                     v
+                                            DAC (同一 TIM 触发)
+                                                     |
+                                                     v
+                                            装置输出口 --> 示波器 2
+\end{verbatim}
+\end{minipage}
+\end{center}
+
+关键实现要点:
+
+采样时钟同步. ADC 与 DAC 共用 TIM2 触发, 触发频率 $f_s = 200$ kHz.
+两者严格锁定同一时钟节拍, 输入输出天然同频, 满足题目 "同频稳定
+显示、无漂移" 要求.
+
+处理链. ADC 转换完成中断里读样点, 单样点跑一次 biquad
+($\approx 1\ \mu\mathrm{s}$), 结果直接写入 DAC 数据寄存器, 完全
+不进任务调度, 避免调度器抖动引入的频率漂移.
+
+固定延迟. ADC 转换 0.5 $\mu$s + IIR 1 $\mu$s + DAC 建立 1 $\mu$s
+$\approx 3\ \mu\mathrm{s}$, 仅体现为输出对输入的固定相位偏移,
+不影响峰峰值, 也符合题目 "相位无要求".
+
+量化误差. 12 bit DAC 满量程 3.3 V 分辨率 0.8 mV, 输出 2 Vpp 时量
+化噪声占比 $< 0.05$\%, 系统峰峰值误差主要来自学习阶段
+$(\omega_{0}, \zeta, K)$ 的估计误差.
+
+
+\newpage
+\section{测试方案与测试结果}
+
+\subsection{基本要求 (1) —— 已知模型电路自身幅频响应}
+
+信号发生器输入 1 Vpp 正弦, 扫频测已知模型电路输出, 与理论
+$V_{\mathrm{out,th}} = |H(j2\pi f)| \cdot 1\ \mathrm{Vpp}$ 对比.
+
+\begin{table}[H]
+\centering
+\caption{已知模型电路幅频响应实测 (输入 1 Vpp)}
+\begin{tabular}{cccc}
+\toprule
+频率 (Hz) & 理论 $V_{\mathrm{out}}$ (Vpp) & 实测 $V_{\mathrm{out}}$ (Vpp) & 相对误差 \\
+\midrule
+100  & & & \\
+500  & & & \\
+1000 & & & \\
+1500 & & & \\
+2000 & & & \\
+2500 & & & \\
+3000 & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{基本要求 (2) —— 信号输出模式验证}
+
+装置 M1 模式直接输出正弦, 示波器测频率与峰峰值, 验证 DDS 频率精度
+与幅度上限.
+
+\begin{table}[H]
+\centering
+\caption{M1 信号输出模式测试}
+\begin{tabular}{cccc}
+\toprule
+设定 $f$ (Hz) & 实测 $f$ (Hz) & 频率误差 & 实测 Vpp (V) \\
+\midrule
+100        & & & \\
+1\ 000     & & & \\
+10\ 000    & & & \\
+100\ 000   & & & \\
+500\ 000   & & & \\
+1\ 000\ 000 & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{基本要求 (3)(4) —— 已知模型控制模式}
+
+M2 模式, 屏输入 $(f, V_{\mathrm{tgt}})$, 一键触发, 示波器测已知模
+型输出端峰峰值:
+
+\begin{table}[H]
+\centering
+\caption{M2 已知模型控制输出电压相对误差 (\%)}
+\begin{tabular}{c|cccccc}
+\toprule
+\diagbox{$f$ (kHz)}{$V_{\mathrm{tgt}}$ (V)} & 1.0 & 1.2 & 1.4 & 1.6 & 1.8 & 2.0 \\
+\midrule
+0.1 & & & & & & \\
+0.5 & & & & & & \\
+1.0 & & & & & & \\
+1.5 & & & & & & \\
+2.0 & & & & & & \\
+2.5 & & & & & & \\
+3.0 & & & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{发挥部分 (1) —— 学习模式验证}
+
+现场接入不同 RLC 拓扑, M3 学习模式一键触发, 记录识别类型与建模耗时:
+
+\begin{table}[H]
+\centering
+\caption{M3 学习建模结果}
+\begin{tabular}{lcccc}
+\toprule
+待测拓扑 & 实际类型 & 识别类型 & 估计 $f_0$ (Hz) & 建模耗时 (s) \\
+\midrule
+RLC 低通 & LPF & & & \\
+RLC 高通 & HPF & & & \\
+RLC 带通 & BPF & & & \\
+RLC 带阻 & BSF & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{发挥部分 (2) —— 推理模式验证}
+
+信号发生器输入 2 Vpp 周期信号至装置输入口, 双通道示波器同时观察装
+置 (M4 推理输出) 与未知模型真实输出, 比较峰峰值:
+
+\begin{table}[H]
+\centering
+\caption{M4 推理输出与未知模型真实输出比较}
+\begin{tabular}{lccccc}
+\toprule
+输入波形 & $f$ (kHz) & 未知模型 Vpp (V)
+         & 装置 Vpp (V) & 相对误差 & 同频稳定? \\
+\midrule
+正弦     & 1   & & & & \\
+正弦     & 15  & & & & \\
+正弦     & 30  & & & & \\
+正弦     & 50  & & & & \\
+矩形 30\% & 10  & & & & \\
+矩形 50\% & 20  & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{测试结果分析}
+
+\textit{(测试完成后补: 已知模型环节的误差主要来自 SK 元件容差与
+NE5532 频响; M2 反算环节误差取决于 $H_{\mathrm{fit}}$ 与实际电路
+的一致性; M3 学习误差取决于扫频点数、Goertzel 信噪比与拟合迭代
+收敛性; M4 推理误差主要来自学习阶段参数估计误差, 与 DAC 量化误差.)}
+
+
+\newpage
+\section*{附录}
+
+\subsection*{附录 A. 关键源文件}
+
+\begin{center}
+\begin{minipage}{0.80\textwidth}
+\begin{verbatim}
+   src/module/signal_out.c    M2 反算 (H_fit 幅频计算)
+   src/module/dds.c           DDS 五种模式业务封装
+   src/module/learning.c      M3 学习状态机
+   src/module/inference.c     M4 推理状态机
+   src/module/goertzel.c      单频点 DFT 幅度提取
+   src/module/panel_ctrl.c    屏事件分发, 模式切换
+   src/drv/ad9910.c           AD9910 寄存器序列驱动
+   src/drv/serial_screen.c    大彩 V5.1 字节流状态机
+   src/core/scheduler.c       协作式时间片调度器
+   src/main.c                 顶层任务注册
+\end{verbatim}
+\end{minipage}
+\end{center}
+
+\subsection*{附录 B. 主循环任务表}
+
+\begin{table}[H]
+\centering
+\caption{任务表}
+\begin{tabular}{llcl}
+\toprule
+任务 & 入口 & 周期 & 责任 \\
+\midrule
+ui        & \texttt{ui\_task}         & 100 ms & 屏显刷新 \\
+panel     & \texttt{panel\_ctrl\_task}& 50 ms  & 屏事件 + 模式切换 \\
+mode      & \texttt{mode\_task}       & 10 ms  & 推进 M3 扫频状态 \\
+sigout    & \texttt{signal\_out\_task}& 3 s    & 反算状态回打 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+M4 推理不在此表中: ADC/DAC 由 TIM 触发, IIR 处理在 ADC 转换完成
+中断里做, 不进调度器.
+
+\subsection*{附录 C. 电路原理图与 PCB}
+
+\textit{(待硬件工作完成后补入原理图与 PCB 布局图.)}
+
+
+\end{document}

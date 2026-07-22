@@ -6,57 +6,45 @@
 
 /*
  * ===========================================================================
- *  module/panel_ctrl —— 串口屏与业务模块之间的胶水层
+ *  module/panel_ctrl —— 串口屏与业务模块的胶水层 (V5.1 协议)
  * ===========================================================================
  *
- *  一共 4 个屏控件:
- *      1) 输出信号按钮   Screen → MCU   组合帧, 携带 freq/vpp
- *      2) 学习按钮       Screen → MCU   短触摸帧, 无 payload
- *      3) 推理按钮       Screen → MCU   短触摸帧, 无 payload
- *      4) 滤波类型文本   MCU → Screen   学习完成后 MCU 推送
+ *  当前只处理 3 个屏控件 (学习/推理按钮以后再加):
+ *      控件               类型     ctrl_id
+ *      ---------------    ------   -------
+ *      频率输入框         文本      4
+ *      电压输入框         文本      7
+ *      输出信号按钮       按钮      11
  *
- *  屏事件 → 业务动作:
- *      "输出信号" 按钮 → 组合帧 04 11 [0x2F] [freq_ascii] ',' [vpp_ascii] 00 FF
- *                       MCU 解出 freq/vpp → signal_out_set(freq, vpp)
- *      "学习"   按钮 → 短触摸帧 FE [0x30] event FF → learning_start()
- *      "推理"   按钮 → 短触摸帧 FE [0x31] event FF → inference_start()
+ *  流程:
+ *      用户屏上输入频率 → 屏发文本上报帧 (ctrl_id=4) → MCU 缓存 last_freq
+ *      用户屏上输入电压 → 屏发文本上报帧 (ctrl_id=7) → MCU 缓存 last_vpp
+ *      用户点输出信号按钮 → 屏发按钮上报帧 (ctrl_id=11)
+ *                                        → MCU 调 signal_out_set(last_freq, last_vpp)
  *
- *      注: 屏上的频率/电压输入框在输入过程中不主动发数据, 输入值存在屏本地,
- *          用户点 "输出信号" 时屏一次性打包发出.
- *
- *  业务状态 → 屏显示:
- *      learning DONE   → 屏显示 学到的滤波类型 (推一个文本, 就这个)
- *      inference       → 不回推屏
- *      signal_out_set  → 不回推屏
- *
- *  注意: 屏 UART 中断只做 "存待办 flag", 真正的动作在 panel_ctrl_task 里做,
- *        避免在 ISR 上下文里调 SPI/HAL_Delay.
- *
- * ---------------------------------------------------------------------------
- *  控件 ID 分配 (占位, 与上位机 VisualTFT 工程对齐后改这里)
- * ---------------------------------------------------------------------------
+ *  ISR 上下文 (drv/serial_screen 回调) 只置 flag + 缓存参数,
+ *  真正动作 (signal_out_set → SPI/HAL) 在 panel_ctrl_task 里做.
+ * ===========================================================================
  */
 
-/* --- 屏 → MCU: 触摸按钮 ID --- */
-#ifndef SCREEN_BTN_OUTPUT_SIGNAL
-#define SCREEN_BTN_OUTPUT_SIGNAL    0x2F     /* 组合帧: 04 11 [2F] [freq],[vpp] 00 FF */
+/* --- 屏侧控件 ID (与 VisualTFT 工程一致) --- */
+#ifndef SCREEN_CTRL_FREQ_INPUT
+#define SCREEN_CTRL_FREQ_INPUT      4       /* 文本控件, type=0x11 */
 #endif
-#ifndef SCREEN_BTN_LEARN
-#define SCREEN_BTN_LEARN            0x30     /* 短触摸帧: FE [30] [event] FF */
+#ifndef SCREEN_CTRL_VPP_INPUT
+#define SCREEN_CTRL_VPP_INPUT       7       /* 文本控件, type=0x11 */
 #endif
-#ifndef SCREEN_BTN_INFER
-#define SCREEN_BTN_INFER            0x31     /* 短触摸帧: FE [31] [event] FF */
+#ifndef SCREEN_CTRL_OUTPUT_BTN
+#define SCREEN_CTRL_OUTPUT_BTN      11      /* 按钮控件, type=0x10 —— 走 signal_out_set (反算 H(s)) */
 #endif
-
-/* --- MCU → 屏: 文本控件 ID --- */
-#ifndef SCREEN_TEXT_FILTER_TYPE
-#define SCREEN_TEXT_FILTER_TYPE     0x60     /* LOWPASS / HIGHPASS / ... */
+#ifndef SCREEN_CTRL_RAW_OUTPUT_BTN
+#define SCREEN_CTRL_RAW_OUTPUT_BTN  40      /* 按钮控件, type=0x10 —— 直接 dds_tone_sine(f, 0.6V) 不反算 */
 #endif
 
 /* ==========================================================================
  *  API
  * ========================================================================== */
 void panel_ctrl_init(void);      /* 内部会 screen_init + 注册回调 */
-void panel_ctrl_task(void);      /* 注册到调度器 (100~200ms 即可) */
+void panel_ctrl_task(void);      /* 注册到调度器 (100~200 ms 即可) */
 
 #endif /* __MODULE_PANEL_CTRL_H */

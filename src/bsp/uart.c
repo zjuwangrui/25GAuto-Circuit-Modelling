@@ -69,7 +69,7 @@ void MX_USART2_UART_Init(void)
 
     gpio.Pin   = GPIO_PIN_3;          /* PA3 RX */
     gpio.Mode  = GPIO_MODE_INPUT;
-    gpio.Pull  = GPIO_PULLUP;         /* 空闲高, 抗噪 */
+    gpio.Pull  = GPIO_PULLUP;         /* 空闲高, 抗噪 */ 
     HAL_GPIO_Init(GPIOA, &gpio);
 
     huart2.Instance          = USART2;

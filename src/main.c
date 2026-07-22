@@ -30,6 +30,7 @@
 #include "module/thd.h"
 #include "module/dds.h"
 #include "module/signal_out.h"
+#include "module/panel_ctrl.h"
 static void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef osc = {0};
@@ -62,8 +63,14 @@ static void SystemClock_Config(void)
 
 
 /* ===== 任务表 (在这里增删) ===== */
-static sched_task_t t_ui        = { .run = ui_task,       .period_ms = 100,  .name = "ui"  };
-static sched_task_t t_signal_out = { .run = signal_out_task, .period_ms = 3000, .name = "sigout" };
+static sched_task_t t_ui         = { .run = ui_task,          .period_ms = 100,  .name = "ui"  };
+static sched_task_t t_signal_out = { .run = signal_out_task,  .period_ms = 3000, .name = "sigout" };
+/* 屏任务: 每 50 ms 处理一次 UART2 收到的屏事件.
+ *   - drv/serial_screen 在 UART2 中断里 (SCREEN_UART_IRQHandler) 组好完整帧,
+ *     调 panel_ctrl.on_frame (仍在中断里) 存待办 flag / 缓存 freq/vpp.
+ *   - panel_ctrl_task 在这里的 task 上下文里检查 flag, 真正调 signal_out_set. */
+static sched_task_t t_panel      = { .run = panel_ctrl_task,  .period_ms = 50,   .name = "panel" };
+
 int main(void)
 {
     /* ---- 内核 ---- */
@@ -78,12 +85,13 @@ int main(void)
     /* ---- 通用模块 & 驱动 ---- */
     ui_init();
     dds_init();                     /* dds_init 内部会 ad9910_init: SPI/复位/PLL 锁定 */
+    panel_ctrl_init();              /* 注册屏事件回调 (内部再次 MX_USART2_UART_Init 无害) */
 
     /* ---- 调度器 ---- */
     sched_init();
-    signal_out_set(100.0, 1.5f);       
-   //dds_tone_sine(1000.0, 1.0f, 0.0f);          /* 上电即输出 1kHz/1Vpp 正弦 */
-    sched_register(&t_signal_out);//打印信息
-    //dds_tone_sine(1000.0, 1.0f, 0.0f);          /* 上电即输出 1kHz/0.5Vpp 正弦 */
+    //sched_register(&t_ui);
+    //sched_register(&t_panel);       /* 屏事件驱动: 频率/电压输入 + 输出信号按钮 */
+    //sched_register(&t_signal_out);// signal_out 状态打印, 需要时打开
+    dds_tone_sine(3000,0.1f,0.0f);
     sched_run_forever();
 }

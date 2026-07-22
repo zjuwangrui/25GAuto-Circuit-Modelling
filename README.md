@@ -7,58 +7,31 @@ STM32F103VE 平台。硬件通路：**STM32 → AD9910 → 硬件电路 (×5.11 
 
 ## 业务链路
 
-### 1. 输出信号
+### 1. 输出信号（当前唯一实现的链路）
+
+屏侧 3 个控件（学习/推理按钮暂缓）：
+
+| 控件 | 类型 | ctrl_id | 屏发/收帧 |
+|---|---|:---:|---|
+| 频率输入框 | 文本 (type=0x11) | **4** | `EE B1 11 00 00 00 04 11 [ASCII] 00 FF FC FF FF` |
+| 电压输入框 | 文本 (type=0x11) | **7** | `EE B1 11 00 00 00 07 11 [ASCII] 00 FF FC FF FF` |
+| 输出信号按钮 | 按钮 (type=0x10) | **11** | `EE B1 11 00 00 00 0B 10 00 01` (**10 字节, 无 FF FC FF FF 帧尾**) |
 
 ```
-串口屏 用户输入 freq/vpp (只存在屏本地, 不发 MCU)
-                    │
-串口屏 点 "输出信号" 按钮 ─→ 发一个组合帧: 04 11 [0x2F] [freq_ascii] ',' [vpp_ascii] 00 FF
-                    │
-                    ↓
-MCU panel_ctrl.on_input 拆出 freq / vpp → signal_out_set(freq, vpp)
-                    │
-                    ↓
-signal_out 用已知传递函数 H(s) + 5.11× 放大 反算, 调 dds_tone_sine
-                    │
-                    ↓
-AD9910 → 硬件电路 → 输出信号 (freq / vpp 出现在电路末端)
+用户屏上输入 freq   → 屏发文本帧 (ctrl_id=4)  → MCU 缓存 last_freq
+用户屏上输入 vpp    → 屏发文本帧 (ctrl_id=7)  → MCU 缓存 last_vpp
+用户点 "输出信号"   → 屏发按钮帧 (ctrl_id=11) → MCU 调 signal_out_set(last_freq, last_vpp)
+                                                → signal_out 反算 H(s)+5.80× → dds_tone_sine
+                                                → AD9910 → 电路 → OUT
 ```
 
-**行为要点**：
-- 用户在屏上输入 freq / vpp **不产生任何 UART 数据**，仅存在屏本地
-- 点击"输出信号"按钮时，屏把 freq + vpp 一起打包成**一个帧**发给 MCU
-- MCU 用逗号拆出两个值，反算传递函数后调 dds_tone_sine
+### 2. 学习流程（TODO）
 
-### 2. 学习流程
+屏侧学习按钮暂未定义 ctrl_id。业务模块 `module/learning` 保留空壳（`learning_start` 只置状态）。
 
-```
-串口屏 点 "学习" 按钮  ─→ MCU: learning_start()
-                          ↓
-learning 模块跑测试信号 → 分析响应 → 判断滤波类型
-                          ↓
-                    完成后: state = LEARN_DONE
-                          ↓
-panel_ctrl 检测到 DONE → 回推屏: 只显示 "滤波类型" 一个文本
-                                  (低通/高通/带通/带阻/全通 中的一个)
-```
+### 3. 推理流程（TODO）
 
-**回传内容**：
-- 只回传一个参数：**未知电路滤波类型**（字符串，例如 "LOWPASS"）
-- 不回传具体参数（截止频率、Q 值等），业务不需要
-
-### 3. 推理输出流程
-
-```
-串口屏 点 "推理" 按钮 ─→ 短触摸帧 FE [0x31] xx FF
-                          ↓
-                    MCU: inference_start()
-                          ↓
-                    inference 模块执行推理动作
-                          ↓
-                    (完成后不回推屏, 无屏反馈)
-```
-
-**回传内容**：无。业务不需要屏上反馈。
+同上，`module/inference` 保留空壳。
 
 ---
 
