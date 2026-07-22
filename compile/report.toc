@@ -23,4 +23,4 @@
 \contentsline {subsection}{\numberline {4.3}基本要求 (3)(4) —— 已知模型控制模式}{11}{subsection.4.3}%
 \contentsline {subsection}{\numberline {4.4}发挥部分 (1) —— 学习模式验证}{12}{subsection.4.4}%
 \contentsline {subsection}{\numberline {4.5}发挥部分 (2) —— 推理模式验证}{12}{subsection.4.5}%
-\contentsline {subsection}{\numberline {4.6}测试结果分析}{13}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.6}测试结果分析}{12}{subsection.4.6}%

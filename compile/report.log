@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.3.11)  22 JUL 2026 18:40
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.3.11)  22 JUL 2026 19:30
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1471,12 +1471,12 @@ Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: ED88BC56EAE1B5A294CEE636CD082C8E;3489.
  ) 
 Here is how much of TeX's memory you used:
- 23728 strings out of 402987
- 479103 string characters out of 5454113
+ 23738 strings out of 402987
+ 479821 string characters out of 5454113
  977629 words of memory out of 5000000
- 52044 multiletter control sequences out of 15000+600000
+ 52054 multiletter control sequences out of 15000+600000
  638093 words of font info for 116 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 94i,18n,133p,1239b,609s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 94i,11n,133p,1239b,609s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on D:\constructing_projects\25GAuto-Circuit-Modelling\compile\report.xdv (14 pages, 160208 bytes).
+Output written on D:\constructing_projects\25GAuto-Circuit-Modelling\compile\report.xdv (14 pages, 162388 bytes).

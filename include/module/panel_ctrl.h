@@ -40,6 +40,15 @@
 #ifndef SCREEN_CTRL_RAW_OUTPUT_BTN
 #define SCREEN_CTRL_RAW_OUTPUT_BTN  40      /* 按钮控件, type=0x10 —— 直接 dds_tone_sine(f, 0.6V) 不反算 */
 #endif
+#ifndef SCREEN_CTRL_LEARN_BTN
+#define SCREEN_CTRL_LEARN_BTN       50      /* 按钮控件, type=0x10 —— 启动学习模式 (M3) */
+#endif
+#ifndef SCREEN_CTRL_INFER_BTN
+#define SCREEN_CTRL_INFER_BTN       51      /* 按钮控件, type=0x10 —— 启动推理模式 (M4) */
+#endif
+#ifndef SCREEN_CTRL_STOP_BTN
+#define SCREEN_CTRL_STOP_BTN        52      /* 按钮控件, type=0x10 —— 停止学习/推理 */
+#endif
 
 /* ==========================================================================
  *  API

@@ -31,6 +31,8 @@
 #include "module/dds.h"
 #include "module/signal_out.h"
 #include "module/panel_ctrl.h"
+#include "module/learning.h"
+#include "module/inference.h"
 static void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef osc = {0};
@@ -70,6 +72,10 @@ static sched_task_t t_signal_out = { .run = signal_out_task,  .period_ms = 3000,
  *     调 panel_ctrl.on_frame (仍在中断里) 存待办 flag / 缓存 freq/vpp.
  *   - panel_ctrl_task 在这里的 task 上下文里检查 flag, 真正调 signal_out_set. */
 static sched_task_t t_panel      = { .run = panel_ctrl_task,  .period_ms = 50,   .name = "panel" };
+/* 学习任务: 10 ms tick 推进扫频状态机 (M3, 见 module/learning) */
+static sched_task_t t_learning   = { .run = learning_task,    .period_ms = 10,   .name = "learn" };
+/* 推理任务: IIR 全部在 ADC 回调里跑, 这里只做偶发检查 (M4) */
+static sched_task_t t_inference  = { .run = inference_task,   .period_ms = 100,  .name = "infer" };
 
 int main(void)
 {
@@ -81,17 +87,22 @@ int main(void)
     MX_GPIO_Init();
     MX_USART1_UART_Init();          /* 调试口 (UART_Printf 走这里) */
     MX_USART2_UART_Init();          /* 大彩串口屏 PA2/PA3 @115200 */
+    MX_ADC1_Init();                 /* 学习/推理都要用 */
 
     /* ---- 通用模块 & 驱动 ---- */
     ui_init();
     dds_init();                     /* dds_init 内部会 ad9910_init: SPI/复位/PLL 锁定 */
     panel_ctrl_init();              /* 注册屏事件回调 (内部再次 MX_USART2_UART_Init 无害) */
+    learning_init();                /* 学习状态机 + 频率表初始化 */
+    inference_init();               /* 推理 biquad + DAC 初始化 */
 
     /* ---- 调度器 ---- */
     sched_init();
     //sched_register(&t_ui);
-    //sched_register(&t_panel);       /* 屏事件驱动: 频率/电压输入 + 输出信号按钮 */
-    //sched_register(&t_signal_out);// signal_out 状态打印, 需要时打开
+    //sched_register(&t_panel);       /* 屏事件驱动: 输入 + 输出 + 学习 + 推理按钮 */
+    //sched_register(&t_learning);    /* 学习状态机 10 ms tick */
+    //sched_register(&t_inference);   /* 推理观察任务 (真活在 ADC 回调) */
+    //sched_register(&t_signal_out);
     dds_tone_sine(3000,0.1f,0.0f);
     sched_run_forever();
 }
