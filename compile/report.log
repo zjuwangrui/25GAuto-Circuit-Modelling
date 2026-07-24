@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.3.11)  22 JUL 2026 19:35
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.12) (preloaded format=xelatex 2026.3.11)  24 JUL 2026 13:03
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1114,11 +1114,28 @@ Overfull \hbox (0.21547pt too wide) in paragraph at lines 157--160
 []\TU/SimSun(0)/m/n/12.045 方 案 二 \TU/lmr/m/n/12.045 STM32 \TU/SimSun(0)/m/n/12.045 内 置 \TU/lmr/m/n/12.045 DAC + DMA + \TU/SimSun(0)/m/n/12.045 定 时 器\TU/lmr/m/n/12.045 . \TU/SimSun(0)/m/n/12.045 电 路 简 单\TU/lmr/m/n/12.045 , \TU/SimSun(0)/m/n/12.045 无 外 置 芯 片\TU/lmr/m/n/12.045 ; \TU/SimSun(0)/m/n/12.045 但 \TU/lmr/m/n/12.045 STM32F1
  []
 
-[3] [4] [5]
-Overfull \hbox (19.49197pt too wide) in paragraph at lines 289--292
+[3] [4]
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+[5]
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+[6]
+Overfull \hbox (19.49197pt too wide) in paragraph at lines 364--367
 []\TU/SimSun(0)/m/n/12.045 分 类 判 据\TU/lmr/m/n/12.045 : \TU/SimSun(0)/m/n/12.045 记 扫 频 得 到 的 离 散 幅 频 序 列 为 $\OMS/cmsy/m/n/12.045 f\OT1/cmr/m/n/12.045 (\OML/cmm/m/it/12.045 f[]; \OMS/cmsy/m/n/12.045 j[]j\OT1/cmr/m/n/12.045 )\OMS/cmsy/m/n/12.045 g[]$\TU/lmr/m/n/12.045 , \TU/SimSun(0)/m/n/12.045 归 一 化 $[] \OT1/cmr/m/n/12.045 = \OMS/cmsy/m/n/12.045 j[]j\OT1/cmr/m/n/12.045 / [][] \OMS/cmsy/m/n/12.045 j[]j$\TU/lmr/m/n/12.045 .
  []
 
+[7]
 
 Package fontspec Info: 
 (fontspec)             Could not resolve font "FangSong/BI" (it probably
@@ -1145,49 +1162,69 @@ Package fontspec Info:
 (fontspec)             - 'normal' (m/n) with NFSS spec.:
 (fontspec)             <->"FangSong/OT:script=hani;language=dflt;"
 
-[6]
-Overfull \hbox (84.37321pt too wide) in paragraph at lines 365--365
+ [8]
+Overfull \hbox (84.37321pt too wide) in paragraph at lines 440--440
 []                                              \TU/lmtt/m/n/12.045 [  \TU/FangSong(0)/m/n/12.045 已 知 模 型 电 路   或   未 知 模 型 电 路  \TU/lmtt/m/n/12.045 ][] 
  []
 
-[7]
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no 
+ in font [lmroman12-regular]:mapping=tex-text;!
+File: fig_known_model.png Graphic file (type bmp)
+<fig_known_model.png>
+[9]
+File: fig_dds_amp.png Graphic file (type bmp)
+<fig_dds_amp.png>
+ [10]
+File: fig_freq_measure.png Graphic file (type bmp)
+<fig_freq_measure.png>
+ [11]
+File: fig_pll_x16.png Graphic file (type bmp)
+<fig_pll_x16.png>
+ [12]
 Overfull \vbox (108.95251pt too high) has occurred while \output is active []
 
- [8] [9]
-Overfull \hbox (3.73207pt too wide) in paragraph at lines 530--530
+ [13] [14]
+Overfull \hbox (3.73207pt too wide) in paragraph at lines 653--653
 []    \TU/FangSong(0)/m/n/12.045 信 号 发 生 器  \TU/lmtt/m/n/12.045 -->  \TU/FangSong(0)/m/n/12.045 装 置 输 入 口  \TU/lmtt/m/n/12.045 (Rin >= 100 kOhm) --> ADC (TIM  \TU/FangSong(0)/m/n/12.045 触 发 \TU/lmtt/m/n/12.045 )[] 
  []
 
 
-Overfull \hbox (16.13832pt too wide) in paragraph at lines 530--530
+Overfull \hbox (16.13832pt too wide) in paragraph at lines 653--653
 []                                             \TU/FangSong(0)/m/n/12.045 装 置 输 出 口  \TU/lmtt/m/n/12.045 -->  \TU/FangSong(0)/m/n/12.045 示 波 器  \TU/lmtt/m/n/12.045 2[] 
  []
 
-[10]
-Overfull \hbox (8.39088pt too wide) in paragraph at lines 558--560
-[]\TU/SimSun(0)/m/n/12.045 信 号 发 生 器 输 入 \TU/lmr/m/n/12.045 1 Vpp \TU/SimSun(0)/m/n/12.045 正 弦\TU/lmr/m/n/12.045 , \TU/SimSun(0)/m/n/12.045 扫 频 测 已 知 模 型 电 路 输 出\TU/lmr/m/n/12.045 , \TU/SimSun(0)/m/n/12.045 与 理 论 $\OML/cmm/m/it/12.045 V[] \OT1/cmr/m/n/12.045 = \OMS/cmsy/m/n/12.045 j\OML/cmm/m/it/12.045 H\OT1/cmr/m/n/12.045 (\OML/cmm/m/it/12.045 j\OT1/cmr/m/n/12.045 2\OML/cmm/m/it/12.045 ^^Yf\OT1/cmr/m/n/12.045 )\OMS/cmsy/m/n/12.045 j ^^A
- []
+[15]
+File: known_model_response.png Graphic file (type bmp)
+<known_model_response.png>
 
-[11] [12] [13]
 
-Package caption Warning: Unused \captionsetup[figure] on input line 31.
-See the caption package documentation for explanation.
+LaTeX Warning: Reference `eq:fitH' on page 16 undefined on input line 709.
 
-[14] (D:\constructing_projects\25GAuto-Circuit-Modelling\compile\report.aux)
+[16] [17] [18] (D:\constructing_projects\25GAuto-Circuit-Modelling\compile\report.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2022/08/05>
  ***********
+
+
+LaTeX Warning: There were undefined references.
+
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: ED88BC56EAE1B5A294CEE636CD082C8E;3489.
+(rerunfilecheck)             Checksum: BE6D22036E9EBC70FFDCEDCC32CD95DB;4001.
  ) 
 Here is how much of TeX's memory you used:
- 23738 strings out of 402987
- 479821 string characters out of 5454113
- 986629 words of memory out of 5000000
- 52054 multiletter control sequences out of 15000+600000
- 638093 words of font info for 116 fonts, out of 8000000 for 9000
+ 23854 strings out of 402987
+ 484929 string characters out of 5454113
+ 979527 words of memory out of 5000000
+ 52167 multiletter control sequences out of 15000+600000
+ 638077 words of font info for 114 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  94i,11n,133p,1239b,609s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on D:\constructing_projects\25GAuto-Circuit-Modelling\compile\report.xdv (14 pages, 164844 bytes).
+Output written on D:\constructing_projects\25GAuto-Circuit-Modelling\compile\report.xdv (18 pages, 206924 bytes).

@@ -7,20 +7,25 @@
 \contentsline {section}{\numberline {二、}理论分析与计算}{5}{section.2}%
 \contentsline {subsection}{\numberline {2.1}已知模型电路参数计算}{5}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}已知模型输出电压反算}{5}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}未知模型学习建模方法}{5}{subsection.2.3}%
-\contentsline {subsection}{\numberline {2.4}推理算法数学表述}{6}{subsection.2.4}%
-\contentsline {section}{\numberline {三、}电路与程序设计}{7}{section.3}%
-\contentsline {subsection}{\numberline {3.1}整体结构}{7}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}已知模型电路}{7}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}探究装置电路}{7}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}程序总控制逻辑}{7}{subsection.3.4}%
-\contentsline {subsection}{\numberline {3.5}人机交互逻辑}{9}{subsection.3.5}%
-\contentsline {subsection}{\numberline {3.6}学习算法实现}{9}{subsection.3.6}%
-\contentsline {subsection}{\numberline {3.7}推理算法实现}{10}{subsection.3.7}%
-\contentsline {section}{\numberline {四、}测试方案与测试结果}{11}{section.4}%
-\contentsline {subsection}{\numberline {4.1}基本要求 (1) —— 已知模型电路自身幅频响应}{11}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}基本要求 (2) —— 信号输出模式验证}{11}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}基本要求 (3)(4) —— 已知模型控制模式}{11}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}发挥部分 (1) —— 学习模式验证}{12}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}发挥部分 (2) —— 推理模式验证}{12}{subsection.4.5}%
-\contentsline {subsection}{\numberline {4.6}测试结果分析}{12}{subsection.4.6}%
+\contentsline {subsection}{\numberline {2.3}DDS放大模块分析}{6}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}测频模块分析}{6}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}十六倍频PLL分析}{7}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}未知模型学习建模方法}{7}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}推理算法数学表述}{8}{subsection.2.7}%
+\contentsline {section}{\numberline {三、}电路与程序设计}{9}{section.3}%
+\contentsline {subsection}{\numberline {3.1}整体结构}{9}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}已知模型电路}{9}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}DDS放大模块}{10}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}测频模块}{11}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}十六倍频PLL模块}{12}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}程序总控制逻辑}{12}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}人机交互逻辑}{14}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}学习算法实现}{14}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}推理算法实现}{15}{subsection.3.9}%
+\contentsline {section}{\numberline {四、}测试方案与测试结果}{16}{section.4}%
+\contentsline {subsection}{\numberline {4.1}基本要求 (1) —— 已知模型电路自身幅频响应}{16}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}基本要求 (2) —— 信号输出模式验证}{16}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}基本要求 (3)(4) —— 已知模型控制模式}{17}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}发挥部分 (1) —— 学习模式验证}{17}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}发挥部分 (2) —— 推理模式验证}{17}{subsection.4.5}%
+\contentsline {section}{\numberline {五、}结论}{18}{section.5}%

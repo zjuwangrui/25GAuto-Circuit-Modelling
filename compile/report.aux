@@ -11,32 +11,53 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.5}推理生成信号方案}{4}{subsection.1.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {二、}理论分析与计算}{5}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}已知模型电路参数计算}{5}{subsection.2.1}\protected@file@percent }
+\newlabel{eq:targetH}{{1}{5}{已知模型电路参数计算}{equation.1}{}}
+\newlabel{eq:designH}{{6}{5}{已知模型电路参数计算}{equation.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces 目标模型与实际元件标称值比较}}{5}{table.caption.3}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:paramcompare}{{2}{5}{目标模型与实际元件标称值比较}{table.caption.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}已知模型输出电压反算}{5}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}未知模型学习建模方法}{5}{subsection.2.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces RLC 二阶模型标准传递函数}}{6}{table.caption.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces 幅频曲线特征 $\to $ 滤波类型判别}}{6}{table.caption.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}推理算法数学表述}{6}{subsection.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {三、}电路与程序设计}{7}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}整体结构}{7}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}已知模型电路}{7}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}探究装置电路}{7}{subsection.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}程序总控制逻辑}{7}{subsection.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}人机交互逻辑}{9}{subsection.3.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces 串口屏控件分配}}{9}{table.caption.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}学习算法实现}{9}{subsection.3.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}推理算法实现}{10}{subsection.3.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {四、}测试方案与测试结果}{11}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}基本要求 (1) —— 已知模型电路自身幅频响应}{11}{subsection.4.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 已知模型电路幅频响应实测 (输入 1 Vpp)}}{11}{table.caption.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}基本要求 (2) —— 信号输出模式验证}{11}{subsection.4.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces M1 信号输出模式测试}}{11}{table.caption.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}基本要求 (3)(4) —— 已知模型控制模式}{11}{subsection.4.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces M2 已知模型控制输出实测}}{12}{table.caption.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}发挥部分 (1) —— 学习模式验证}{12}{subsection.4.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces M3 学习建模结果}}{12}{table.caption.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}发挥部分 (2) —— 推理模式验证}{12}{subsection.4.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces M4 推理输出与未知模型真实输出比较}}{12}{table.caption.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}测试结果分析}{12}{subsection.4.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces 任务表}}{14}{table.caption.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}DDS放大模块分析}{6}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}测频模块分析}{6}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}十六倍频PLL分析}{7}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}未知模型学习建模方法}{7}{subsection.2.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces RLC 二阶模型标准传递函数}}{7}{table.caption.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces 幅频曲线特征 $\to $ 滤波类型判别}}{8}{table.caption.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}推理算法数学表述}{8}{subsection.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {三、}电路与程序设计}{9}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}整体结构}{9}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}已知模型电路}{9}{subsection.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces 已知模型电路原理图}}{10}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:known}{{1}{10}{已知模型电路原理图}{figure.caption.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 已知模型关键元件}}{10}{table.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}DDS放大模块}{10}{subsection.3.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces DDS输出放大模块原理图}}{11}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:ddsamp}{{2}{11}{DDS输出放大模块原理图}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}测频模块}{11}{subsection.3.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces LM339测频整形模块原理图}}{11}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:freq}{{3}{11}{LM339测频整形模块原理图}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}十六倍频PLL模块}{12}{subsection.3.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces CD74HC4046A与SN74HC161构成的十六倍频PLL}}{12}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:pll}{{4}{12}{CD74HC4046A与SN74HC161构成的十六倍频PLL}{figure.caption.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}程序总控制逻辑}{12}{subsection.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}人机交互逻辑}{14}{subsection.3.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces 串口屏控件分配}}{14}{table.caption.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}学习算法实现}{14}{subsection.3.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.9}推理算法实现}{15}{subsection.3.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {四、}测试方案与测试结果}{16}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}基本要求 (1) —— 已知模型电路自身幅频响应}{16}{subsection.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces 已知模型输出实测（输入1~Vpp正弦）}}{16}{table.caption.12}\protected@file@percent }
+\newlabel{tab:knownmeas}{{7}{16}{已知模型输出实测（输入1~Vpp正弦）}{table.caption.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces 目标曲线、实际元件设计曲线与实测点比较}}{16}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:knowncurve}{{5}{16}{目标曲线、实际元件设计曲线与实测点比较}{figure.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}基本要求 (2) —— 信号输出模式验证}{16}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces M1 信号输出模式测试}}{17}{table.caption.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}基本要求 (3)(4) —— 已知模型控制模式}{17}{subsection.4.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces M2 已知模型控制输出实测}}{17}{table.caption.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}发挥部分 (1) —— 学习模式验证}{17}{subsection.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces M3 学习建模结果}}{17}{table.caption.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}发挥部分 (2) —— 推理模式验证}{17}{subsection.4.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces M4 推理输出与未知模型真实输出比较}}{18}{table.caption.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {五、}结论}{18}{section.5}\protected@file@percent }
 \gdef\svg@ink@ver@settings{{\m@ne }{inkscape}{\m@ne }}
-\gdef \@abspage@last{14}
+\gdef \@abspage@last{18}
